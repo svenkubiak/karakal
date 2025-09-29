@@ -1,0 +1,123 @@
+# Application configuration
+#
+# The configuration consists of default values that are common in all environments and
+# environment specific values for dev, test, and prod.
+#
+# Values in an active environment overwrite default values
+#
+# Default configuration:
+
+default:
+  application:
+    name: karakal
+    secret: tFS1nW3i8eAVTpFgo4CLsrXIwgf4eIPBp36HeW4LpYfoTorx79qsqiDpCMFYx83m
+    language: en
+    vault:
+      enable: true
+  connector:
+    http:
+      host: 192.168.1.224
+      port: 8080
+  karakal:
+    url: https://karakal.local.kubiak.me
+    domain: karakal.local.kubiak.me
+  session:
+    cookie:
+      name: karakal-session
+      secret: vault{}
+      key: vault{}
+      secure: true
+  authentication:
+    redirect: /login
+    cookie:
+      name: karakal-authentication
+      secret: vault{}
+      key: vault{}
+      secure: true
+  token:
+    secret: token.secret
+  flash:
+    cookie:
+      name: karakal-flash
+      secret: vault{}
+      key: vault{}
+      secure: true
+  smtp:
+    host: localhost
+    port: 25
+
+# Environments configuration:
+
+environments:
+  test:
+    connector:
+      http:
+        port: 9090
+    session:
+      cookie:
+        secret: vault{}
+        key: vault{}
+        secure: false
+    flash:
+      cookie:
+        secret: vault{}
+        key: vault{}
+        secure: false
+    authentication:
+      cookie:
+        secret: vault{}
+        key: vault{}
+        secure: false
+    persistence:
+      mongo:
+        embedded: true
+        host: localhost
+        port: 29019
+        package: models
+    
+  dev:
+    connector:
+      http:
+        port: 9090
+    session:
+      cookie:
+        secret: vault{}
+        key: vault{}
+        secure: false
+    flash:
+      cookie:
+        secret: vault{}
+        key: vault{}
+        secure: false
+    authentication:
+      cookie:
+        secret: vault{}
+        key: vault{}
+        secure: false
+    persistence:
+      mongo:
+        dbname: karakal
+        embedded: false
+        host: localhost
+        port: 31031
+        package: models
+
+  prod:
+    connector:
+      http:
+        port: 9090
+    session:
+      cookie:
+        secure: false
+    flash:
+      cookie:
+        secure: false
+    authentication:
+      cookie:
+        secure: false
+    persistence:
+      mongo:
+        embedded: true
+        host: localhost
+        port: 29019
+        package: models
