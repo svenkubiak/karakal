@@ -15,7 +15,7 @@ generate_secret() {
 # Create an .env file and add configuration variables
 echo "1/6 Creating .env file..."
 
-MONGODB_USERNAME=filedpapers
+MONGODB_USERNAME=karakal
 MONGODB_PASSWORD=$(generate_secret)
 
 cat > .env <<EOL
@@ -34,7 +34,7 @@ SMTP_PROTOCOL=smtptls
 SMTP_DEBUG=false
 
 # Auto generated - Change at your own risk
-MONGODB_INITDB_DATABASE=filedpapers
+MONGODB_INITDB_DATABASE=karakal
 MONGODB_INITDB_ROOT_USERNAME=${MONGODB_USERNAME}
 MONGODB_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
 PERSISTENCE_MONGO_USERNAME=${MONGODB_USERNAME}
