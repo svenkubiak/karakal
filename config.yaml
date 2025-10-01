@@ -1,0 +1,75 @@
+### Do not change anything unless you know what you are doing ###
+
+default:
+  application:
+    language: en
+    url: env{}
+    secret: env{}
+    registration: env{}
+  connector:
+    http:
+      host: 0.0.0.0
+      port: 9090
+  api:
+    accessToken:
+      key: env{}
+      secret: env{}
+      expires: 5 # Minutes
+    refreshToken:
+      secret: env{}
+      key: env{}
+      expires: 10080 # Minutes (7 days)
+    challengeToken:
+      key: env{}
+      secret: env{}
+  session:
+    cookie:
+      name: __Host-karakal-session
+      secret: env{}
+      key: env{}
+      secure: true
+  authentication:
+    redirect:
+      login: /auth/login
+      mfa: /auth/mfa
+    cookie:
+      name: __Host-karakal-authentication
+      secret: env{}
+      key: env{}
+      secure: true
+  flash:
+    cookie:
+      name: __Host-karakal-flash
+      secret: env{}
+      key: env{}
+      secure: true
+  i18n:
+    cookie:
+      name: __Host-karakal-i18n
+  smtp:
+    host: env{}
+    port: env{}
+    authentication: env{}
+    username: env{}
+    password: env{}
+    from: env{}
+    protocol: env{}
+    debug: env{}
+  persistence:
+    mongo:
+      embedded: false
+      host: karakal-database
+      port: 27017
+      dbname: karakal
+      username: env{}
+      password: env{}
+      authdb: admin
+      auth: true
+      package: models
+
+environments:
+  prod:
+    application:
+      name: filedpapers
+
+### Do not change anything unless you know what you are doing ###
