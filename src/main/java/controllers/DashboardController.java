@@ -97,8 +97,6 @@ public class DashboardController {
             app = dataService.findApp(appId);
         }
 
-        System.out.println(form.getBoolean("registration").orElse(false));
-
         form.expectValue("name", "Name must be a valid value containing min. 3 and up to 64 alphanumeric characters.");
         form.expectRegex("name", NAME_PATTERN, "Name must be a valid value containing min. 3 and up to 64 alphanumeric characters.");
         if (app == null || !form.get("name").equalsIgnoreCase(app.getName())) {

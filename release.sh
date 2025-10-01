@@ -5,6 +5,7 @@ IMAGE_NAME="karakal"
 GHCR_USERNAME="svenkubiak"
 REPO_NAME="karakal"
 GHCR_URL="ghcr.io"
+REPO_URL="https://github.com/$GHCR_USERNAME/$REPO_NAME"
 
 MODE="$1"
 
@@ -26,7 +27,9 @@ if [[ "$MODE" == "dev" ]]; then
   IMAGE_DEV_PATH="$GHCR_URL/$GHCR_USERNAME/$REPO_NAME/$IMAGE_NAME:dev"
 
   echo "[Karakal] Building :dev image..."
-  docker build --no-cache -t "$IMAGE_NAME:dev" .
+  docker build --no-cache \
+    --label "org.opencontainers.image.source=$REPO_URL" \
+    -t "$IMAGE_NAME:dev" .
   docker tag "$IMAGE_NAME:dev" "$IMAGE_DEV_PATH"
   docker push "$IMAGE_DEV_PATH"
 
@@ -58,7 +61,9 @@ if [ $STATUS -ne 0 ]; then
     exit 1
 else
     echo "[Karakal] Building Version Docker image..."
-    docker build --no-cache -t "$IMAGE_NAME:$IMAGE_VERSION" .
+    docker build --no-cache \
+      --label "org.opencontainers.image.source=$REPO_URL" \
+      -t "$IMAGE_NAME:$IMAGE_VERSION" .
 
     if is_stable_release; then
         docker tag "$IMAGE_NAME:$IMAGE_VERSION" "$IMAGE_NAME:latest"

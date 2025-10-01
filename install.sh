@@ -22,16 +22,8 @@ cat > .env <<EOL
 # Custom configuration
 VERSION=latest
 
-APPLICATION_URL=http://localhost
-APPLICATION_REGISTRATION=true
-SMTP_HOST=localhost
-SMTP_PORT=25
-SMTP_AUTHENTICATION=true
-SMTP_USERNAME=username
-SMTP_PASSWORD=password
-SMTP_FROM=email@localhost
-SMTP_PROTOCOL=smtptls
-SMTP_DEBUG=false
+KARAKAL_URL=http://localhost
+KARAKAL_DOMAIN=localhost
 
 # Auto generated - Change at your own risk
 MONGODB_INITDB_DATABASE=karakal

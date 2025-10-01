@@ -36,7 +36,7 @@ services:
       - MONGODB_INITDB_ROOT_PASSWORD=${MONGODB_INITDB_ROOT_PASSWORD}
       - MONGODB_INITDB_DATABASE=${MONGODB_INITDB_DATABASE}
     volumes:
-      - karakal_papers_mongodb_data:/data/db
+      - karakal_mongodb_data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 30s
@@ -51,4 +51,4 @@ networks:
     driver: bridge
 
 volumes:
-  karakal_papers_mongodb_data:
+  karakal_mongodb_data:

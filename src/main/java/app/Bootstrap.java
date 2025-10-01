@@ -2,6 +2,7 @@ package app;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import constants.Const;
+import controllers.ApplicationController;
 import controllers.AssetController;
 import controllers.DashboardController;
 import controllers.PasskeyController;
@@ -31,6 +32,10 @@ public class Bootstrap implements MangooBootstrap {
 
     @Override
     public void initializeRoutes() {
+        Bind.controller(ApplicationController.class).withRoutes(
+                On.get().to("/health").respondeWith("health")
+        );
+
         Bind.controller(DashboardController.class).withRoutes(
                 On.get().to("/dashboard").respondeWith("index"),
                 On.get().to("/dashboard/login").respondeWith("login"),

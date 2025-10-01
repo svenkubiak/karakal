@@ -226,6 +226,11 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                 if (username !== null && username !== undefined && username !== "") {
                     usernameInput.value = username;
                     document.getElementById('username').disabled = true;
+                } else {
+                    const differentAccount = document.getElementById("different-account");
+                    if (differentAccount) {
+                        differentAccount.remove();
+                    }
                 }
             }
 

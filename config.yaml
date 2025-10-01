@@ -70,6 +70,6 @@ default:
 environments:
   prod:
     application:
-      name: filedpapers
+      name: karakal
 
 ### Do not change anything unless you know what you are doing ###
