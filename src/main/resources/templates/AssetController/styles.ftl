@@ -1,0 +1,114 @@
+:root{
+--bg1: #f4f6fa;
+--bg2: #ffffff;
+--card: #ffffff;
+--accent: #4a6cf7;
+--accent-2: #3ddc97;
+--muted: #555;
+--radius: 16px;
+--maxw: 480px;
+font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+html,body{height:100%;}
+body{
+margin:0;
+background: linear-gradient(180deg,var(--bg1),var(--bg2));
+color: #111;
+display:flex;
+align-items:center;
+justify-content:center;
+padding:32px;
+}
+
+.card{
+width:100%;
+max-width:var(--maxw);
+background: var(--card);
+border-radius:var(--radius);
+padding:40px 32px;
+box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+border: 1px solid #e5e7eb;
+}
+
+.header{
+text-align:center;
+margin-bottom:28px;
+}
+.logo{
+width:64px;height:64px;border-radius:14px;
+background: linear-gradient(135deg,var(--accent),var(--accent-2));
+display:flex;align-items:center;justify-content:center;
+margin:0 auto 14px auto;
+color:white;
+}
+h1{font-size:26px;margin:0;letter-spacing:-0.2px;color:#111}
+p.lead{margin:6px 0 0 0;color:var(--muted);font-size:15px}
+
+form{margin-top:16px;display:grid;gap:16px}
+
+label{font-size:14px;color:var(--muted);display:block;margin-bottom:6px}
+
+.input{
+position:relative;
+display:flex;
+align-items:center;
+background:#f9fafb;
+border-radius:12px;
+padding:14px 16px;
+border:1px solid #d1d5db;
+transition:border-color .12s ease;
+}
+.input:focus-within{border-color:var(--accent)}
+.input input{
+background:transparent;border:0;outline:0;color:inherit;font-size:16px;flex:1;
+}
+
+.btn{
+width:100%;
+display:inline-flex;align-items:center;justify-content:center;padding:14px 16px;border-radius:12px;border:0;cursor:pointer;
+background:linear-gradient(90deg,var(--accent),#3651d4);color:white;font-weight:600;font-size:16px;
+box-shadow:0 8px 22px rgba(74,108,247,0.25);
+}
+.btn:active{transform:translateY(1px)}
+
+.footer{margin-top:20px;text-align:center;font-size:14px;color:var(--muted)}
+.footer a{color:var(--accent);text-decoration:none;font-weight:600}
+
+@media (max-width:480px){
+body{padding:18px}
+.card{padding:28px 20px}
+}
+
+.button-container {
+margin-top: 20px;
+}
+
+/* Success Card */
+.card.success-card .logo {
+background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.card.success-card .btn {
+background: linear-gradient(90deg, var(--accent), #3651d4);
+color: white;
+box-shadow: 0 8px 22px rgba(74,108,247,0.25);
+}
+
+/* Error Card */
+.card.error-card .logo {
+background: linear-gradient(135deg, #ef4444, #b91c1c);
+}
+
+.card.error-card .btn {
+background: linear-gradient(90deg, var(--accent), #3651d4);
+color: white;
+box-shadow: 0 8px 22px rgba(74,108,247,0.25);
+}
+
+.small-text {
+font-size: 0.75rem;
+display: block;
+width: 100%;
+text-align: center;
+}

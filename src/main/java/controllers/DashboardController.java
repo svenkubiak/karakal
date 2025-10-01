@@ -35,7 +35,7 @@ public class DashboardController {
 
     public Response login() {
         App dashboard = dataService.findDashboard();
-        return Response.ok().render("applicationId", dashboard.getAppId());
+        return Response.ok().render("appId", dashboard.getAppId());
     }
 
     public Response logout(Session session) {
@@ -72,6 +72,17 @@ public class DashboardController {
     }
 
     @FilterWith(PasskeyFilter.class)
+    public Response info(String appId) {
+        App app = null;
+        if (StringUtils.isNotBlank(appId)) {
+            app = dataService.findApp(appId);
+        }
+
+        return Response.ok().render("app", app);
+    }
+
+
+    @FilterWith(PasskeyFilter.class)
     public Response delete(String appId) {
         dataService.removeUsersFromApp(appId);
         dataService.delete(appId);
@@ -85,6 +96,8 @@ public class DashboardController {
         if (StringUtils.isNotBlank(appId)) {
             app = dataService.findApp(appId);
         }
+
+        System.out.println(form.getBoolean("registration").orElse(false));
 
         form.expectValue("name", "Name must be a valid value containing min. 3 and up to 64 alphanumeric characters.");
         form.expectRegex("name", NAME_PATTERN, "Name must be a valid value containing min. 3 and up to 64 alphanumeric characters.");

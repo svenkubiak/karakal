@@ -2,6 +2,7 @@ package models;
 
 import io.mangoo.annotations.Collection;
 import io.mangoo.persistence.Entity;
+import io.mangoo.utils.Arguments;
 
 import java.time.LocalDateTime;
 
@@ -18,15 +19,9 @@ public class User extends Entity {
 
     public User() {}
 
-    public User(String appId, String username, byte[] credentialId, byte[] publicKeyCose, long signCount, String attestedCredentialData, String coseKey) {
-        this.appId = appId;
-        this.username = username;
-        this.credentialId = credentialId;
-        this.publicKeyCose = publicKeyCose;
-        this.signCount = signCount;
+    public User(String username) {
+        this.username = Arguments.requireNonBlank(username, "username can not be null or empty");
         this.createdAt = LocalDateTime.now();
-        this.attestedCredentialData = attestedCredentialData;
-        this.coseKey = coseKey;
     }
 
     public String getUsername() {

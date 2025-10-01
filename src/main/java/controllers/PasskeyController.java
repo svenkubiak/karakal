@@ -1,8 +1,8 @@
 package controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.webauthn4j.WebAuthnManager;
 import com.webauthn4j.data.*;
+import com.webauthn4j.data.attestation.AttestationObject;
 import com.webauthn4j.data.attestation.authenticator.AAGUID;
 import com.webauthn4j.data.attestation.authenticator.AttestedCredentialData;
 import com.webauthn4j.data.attestation.authenticator.Curve;
@@ -12,9 +12,6 @@ import com.webauthn4j.data.client.Origin;
 import com.webauthn4j.data.client.challenge.DefaultChallenge;
 import com.webauthn4j.server.ServerProperty;
 import constants.Const;
-import io.mangoo.cache.Cache;
-import io.mangoo.cache.CacheProvider;
-import io.mangoo.core.Config;
 import io.mangoo.routing.Response;
 import io.mangoo.routing.bindings.Request;
 import io.mangoo.utils.CommonUtils;
@@ -25,9 +22,12 @@ import jakarta.inject.Inject;
 import models.App;
 import models.Credential;
 import models.User;
+import org.apache.commons.compress.utils.Lists;
+import org.apache.fury.util.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import services.DataService;
+import utils.CacheUtils;
 import utils.JwtUtils;
 
 import java.security.KeyFactory;
@@ -35,40 +35,37 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
-
 public class PasskeyController {
     private static final Logger LOG = LogManager.getLogger(PasskeyController.class);
     private final DataService dataService;
-    private final Cache cache;
-    private final Config config;
-    
     @Inject
-    public PasskeyController(DataService dataService, CacheProvider cacheProvider, Config config) {
+    public PasskeyController(DataService dataService) {
         this.dataService = Objects.requireNonNull(dataService, "dataService can not be null");
-        this.cache = Objects.requireNonNull(cacheProvider.getCache("karakal"), "cache can not be null");
-        this.config = Objects.requireNonNull(config, "config can not be null");
     }
 
     public Response wellKnown(String appId) {
         App app = dataService.findApp(appId);
-
-        List<Map<String, String>> keys = new ArrayList<>();
         if (app != null) {
             try {
-                byte[] keyBytes = Base64.getDecoder().decode(app.getPublicKey());
-                KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-                X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-                RSAPublicKey publicKey = (RSAPublicKey) keyFactory.generatePublic(spec);
+                byte[] keyBytes = CommonUtils.urlDecodeFromBase64(app.getPublicKey());
+                RSAPublicKey publicKey = (RSAPublicKey) KeyFactory
+                        .getInstance("RSA")
+                        .generatePublic(new X509EncodedKeySpec(keyBytes));
 
-                String n = Base64.getUrlEncoder().withoutPadding().encodeToString(publicKey.getModulus().toByteArray());
-                String e = Base64.getUrlEncoder().withoutPadding().encodeToString(publicKey.getPublicExponent().toByteArray());
+                String n = CommonUtils.urlEncodeWithoutPaddingToBase64(publicKey.getModulus().toByteArray());
+                String e = CommonUtils.urlEncodeWithoutPaddingToBase64(publicKey.getPublicExponent().toByteArray());
 
-                keys.add(Map.of("kry", "RSA",  "use", "sig", "alg", "RS256", "n", n, "e", e));
+                List<Map<String, String>> keys = new ArrayList<>();
+                keys.add(Map.of(
+                        "kry", "RSA",
+                        "use", "sig",
+                        "alg", "RS256",
+                        "n", n,
+                        "e", e));
+
                 return Response.ok().bodyJson(keys);
             } catch (Exception e) {
-                LOG.error("Failed to retrieve jwks data", e);
+                LOG.error("Failed to retrieve Jwks data", e);
                 return Response.internalServerError();
             }
         }
@@ -78,16 +75,15 @@ public class PasskeyController {
 
     public Response registerInit(Map<String, String> data) {
         if (data != null && !data.isEmpty()) {
-            String applicationId = data.get("applicationId");
-            App app = dataService.findApp(applicationId);
+            App app = dataService.findApp(data.get("appId"));
 
             if (app != null && app.isRegistration()) {
                 String username = data.get("username");
-                User user = dataService.findUser(data.get("username"), app.getAppId());
+                User user = dataService.findUser(username, app.getAppId());
 
                 if (user == null) {
                     DefaultChallenge challenge = new DefaultChallenge();
-                    cacheRegisterChallenge(username, challenge);
+                    CacheUtils.cacheRegisterChallenge(username, challenge.getValue());
 
                     PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(
                             new PublicKeyCredentialRpEntity(app.getDomain(), app.getDomain()),
@@ -112,24 +108,19 @@ public class PasskeyController {
         return Response.badRequest();
     }
 
-    private void cacheRegisterChallenge(String username, DefaultChallenge challenge) {
-        cache.put(username + "-register-challenge", challenge.getValue());
-    }
-
     public Response registerComplete(Request request) {
         try {
-            String username = request.getHeader("x-username");
+            String body = request.getBody();
+            String username = request.getHeader("karakal-username");
             User user = dataService.findUser(username);
-            App app = dataService.findApp(request.getHeader("x-application-id"));
+            App app = dataService.findApp(request.getHeader("karakal-app-id"));
 
-            if (user == null) {
+            if (app != null && user == null && StringUtils.isNotBlank(body)) {
                 WebAuthnManager webAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
-                RegistrationData registrationData = webAuthnManager.parseRegistrationResponseJSON(request.getBody());
 
-                byte[] challenge = getRegisterChallenge(username);
-
+                byte[] challenge = CacheUtils.getRegisterChallenge(username);
                 ServerProperty serverProperty = new ServerProperty(
-                        new Origin("https://" + app.getDomain()),
+                        new Origin("https://" + app.getDomain()), //FIX ME
                         app.getDomain(),
                         new DefaultChallenge(challenge)
                 );
@@ -141,99 +132,106 @@ public class PasskeyController {
                         true
                 );
 
+                RegistrationData registrationData = webAuthnManager.parseRegistrationResponseJSON(body);
                 webAuthnManager.verify(registrationData, registrationParameters);
 
-                AttestedCredentialData attestedCredentialData = registrationData
-                        .getAttestationObject()
-                        .getAuthenticatorData()
-                        .getAttestedCredentialData();
+                AttestedCredentialData attestedCredentialData = null;
+                AttestationObject attestationObject = registrationData.getAttestationObject();
+                if (attestationObject != null) {
+                    attestedCredentialData = attestationObject.getAuthenticatorData().getAttestedCredentialData();
+                }
 
-                byte[] credentialId = attestedCredentialData.getCredentialId();
-                byte[] publicKeyCose = attestedCredentialData.getCOSEKey().getPublicKey().getEncoded();
-                long signCount = registrationData
-                        .getAttestationObject()
-                        .getAuthenticatorData()
-                        .getSignCount();
+                if (attestedCredentialData != null && attestedCredentialData.getCOSEKey().getPublicKey() != null) {
+                    byte[] credentialId = attestedCredentialData.getCredentialId();
+                    byte[] publicKeyCose = attestedCredentialData.getCOSEKey().getPublicKey().getEncoded();
 
-                user = new User(app.getAppId(), username, credentialId, publicKeyCose, signCount, JsonUtils.toJson(attestedCredentialData), JsonUtils.toJson(attestedCredentialData.getCOSEKey()));
-                dataService.save(user);
-                removeRegisterChallenge(username);
+                    long signCount = registrationData
+                            .getAttestationObject()
+                            .getAuthenticatorData()
+                            .getSignCount();
 
-                return Response.ok();
+                    //CHECK THIS!
+                    user = new User(username);
+                    user.setAppId(app.getAppId());
+                    user.setCredentialId(credentialId);
+                    user.setPublicKeyCose(publicKeyCose);
+                    user.setSignCount(signCount);
+                    user.setAttestedCredentialData(JsonUtils.toJson(attestedCredentialData));
+                    user.setCoseKey(JsonUtils.toJson(attestedCredentialData.getCOSEKey()));
+
+                    dataService.save(user);
+                    CacheUtils.removeRegisterChallenge(username);
+
+                    return Response.ok();
+                }
             }
         } catch(Exception e) {
             LOG.error("Failed to complete registration", e);
-
             return Response.badRequest();
         }
 
         return Response.badRequest();
     }
 
-    private void removeRegisterChallenge(String username) {
-        cache.remove(username + "-register-challenge");
-    }
-
-    private byte[] getRegisterChallenge(String username) {
-        return cache.get(username + "-register-challenge");
-    }
-
     public Response loginInit(Map<String, String> data) {
-        String username = data.get("username");
+        if (data != null && !data.isEmpty()) {
+            String username = data.get("username");
 
-        App app = dataService.findApp(data.get("applicationId"));
-        User user = dataService.findUser(username, app.getAppId());
+            App app = dataService.findApp(data.get("appId"));
+            User user = null;
+            if (app != null) {
+                user = dataService.findUser(username, app.getAppId());
+            }
 
-        if (user != null) {
-            Map<String, Object> allowCredential = new HashMap<>();
-            allowCredential.put("type", "public-key");
-            allowCredential.put("id", Base64.getUrlEncoder().withoutPadding().encodeToString(user.getCredentialId()));
+            if (user != null) {
+                Map<String, Object> allowCredential = new HashMap<>();
+                allowCredential.put("type", "public-key");
+                allowCredential.put("id", CommonUtils.urlEncodeWithoutPaddingToBase64(user.getCredentialId()));
 
-            DefaultChallenge challenge = new DefaultChallenge();
-            cacheLoginChallenge(username, challenge);
+                byte [] challenge =  new DefaultChallenge().getValue();
+                CacheUtils.cacheLoginChallenge(username, challenge);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("challenge", Base64.getUrlEncoder().withoutPadding().encodeToString(challenge.getValue()));
-            response.put("timeout", 60000);
-            response.put("rpId", app.getDomain());
-            response.put("allowCredentials", List.of(allowCredential));
-            response.put("userVerification", "preferred");
+                Map<String, Object> response = new HashMap<>();
+                response.put("challenge", CommonUtils.urlEncodeWithoutPaddingToBase64(challenge));
+                response.put("timeout", 60000);
+                response.put("rpId", app.getDomain());
+                response.put("allowCredentials", List.of(allowCredential));
+                response.put("userVerification", "preferred");
 
-            return Response.ok().bodyJson(response);
+                return Response.ok().bodyJson(response);
+            }
         }
 
         return Response.badRequest();
     }
 
-    private void cacheLoginChallenge(String username, DefaultChallenge challenge) {
-        cache.put(username + "-login-challenge", challenge.getValue());
-    }
-
+    @SuppressWarnings("rawtypes")
     public Response loginComplete(Request request) throws Exception {
-        App app = dataService.findApp(request.getHeader("x-application-id"));
-        User user = dataService.findUser(request.getHeader("x-username"), request.getHeader("x-application-id"));
-        if (user != null && app != null) {
+        User user = null;
+        App app = dataService.findApp(request.getHeader("karakal-app-id"));
+        if (app != null) {
+            user = dataService.findUser(request.getHeader("karakal-username"), app.getAppId());
+        }
+
+        String body = request.getBody();
+        if (user != null && StringUtils.isNotBlank(body)) {
             WebAuthnManager manager = WebAuthnManager.createNonStrictWebAuthnManager();
-            AuthenticationData authData = manager.parseAuthenticationResponseJSON(request.getBody());
-            byte[] challenge = getLoginChallenge(user.getUsername());
+            AuthenticationData authData = manager.parseAuthenticationResponseJSON(body);
+
+            byte[] challenge = CacheUtils.getLoginChallenge(user.getUsername());
             ServerProperty serverProperty = new ServerProperty(
-                    new Origin("https://" + app.getDomain()),
+                    new Origin("https://" + app.getDomain()), //FIX ME
                     app.getDomain(),
                     new DefaultChallenge(challenge)
             );
 
-            Map<String, Object> coseMap = null;
-            try {
-                coseMap = JsonUtils.getMapper().readValue(user.getCoseKey(), Map.class);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
+            Map coseMap = JsonUtils.getMapper().readValue(user.getCoseKey(), Map.class);
 
-            int keyType = Integer.parseInt(coseMap.get("1").toString());
-            int algorithm = Integer.parseInt(coseMap.get("3").toString());
-            int crv = Integer.parseInt(coseMap.get("-1").toString());
-            byte[] x = Base64.getDecoder().decode((String) coseMap.get("-2"));
-            byte[] y = Base64.getDecoder().decode((String) coseMap.get("-3"));
+            //int keyType = Integer.parseInt(coseMap.get("1").toString());
+            //int algorithm = Integer.parseInt(coseMap.get("3").toString());
+            //int crv = Integer.parseInt(coseMap.get("-1").toString());
+            byte[] x = CommonUtils.decodeFromBase64((String) coseMap.get("-2"));
+            byte[] y = CommonUtils.decodeFromBase64((String) coseMap.get("-3"));
 
             EC2COSEKey coseKey = new EC2COSEKey(
                     null,
@@ -246,17 +244,17 @@ public class PasskeyController {
 
             Map<String, String> flatMap = JsonUtils.toFlatMap(user.getAttestedCredentialData());
             AttestedCredentialData attestedCredentialData = new AttestedCredentialData(
-                    new AAGUID(Base64.getDecoder().decode(flatMap.get("aaguid.bytes"))),
+                    new AAGUID(CommonUtils.decodeFromBase64(flatMap.get("aaguid.bytes"))),
                     flatMap.get("aaguid.value").getBytes(),
                     coseKey
             );
 
-            Credential c = new Credential(user.getCredentialId(), user.getPublicKeyCose(), user.getSignCount(), attestedCredentialData);
+            Credential credential = new Credential(user.getCredentialId(), user.getPublicKeyCose(), user.getSignCount(), attestedCredentialData);
             AuthenticationParameters params = new AuthenticationParameters(
                     serverProperty,
-                    c,
-                    false,
-                    true
+                    credential,
+                    List.of(user.getCredentialId()),
+                    false
             );
 
             var jwtData = JwtUtils.jwtData()
@@ -279,8 +277,14 @@ public class PasskeyController {
 
             try {
                 manager.verify(authData, params);
-                removeLoginChallenge(user.getUsername());
-                return Response.ok().header("x-login-redirect", app.getRedirect()).cookie(cookie);
+                CacheUtils.removeLoginChallenge(user.getUsername());
+
+                if (app.getName().equalsIgnoreCase("dashboard") && app.isRegistration()) {
+                    app.setRegistration(false);
+                    dataService.save(app);
+                }
+
+                return Response.ok().header("karakal-login-redirect", app.getRedirect()).cookie(cookie);
             } catch (Exception e) {
                 LOG.error("Failed to complete authentication", e);
                 return Response.badRequest();
@@ -288,13 +292,5 @@ public class PasskeyController {
         }
 
         return Response.badRequest();
-    }
-
-    private void removeLoginChallenge(String username) {
-        cache.remove(username + "-login-challenge");
-    }
-
-    private byte[] getLoginChallenge(String username) {
-        return cache.get(username + "-login-challenge");
     }
 }

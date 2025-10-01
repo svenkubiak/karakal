@@ -105,3 +105,7 @@ label{font-size:14px;color:var(--muted);display:block;margin-bottom:6px}
     color: white;
     box-shadow: 0 8px 22px rgba(74,108,247,0.25);
 }
+
+.small-text {
+    font-size: 0.75rem;
+}

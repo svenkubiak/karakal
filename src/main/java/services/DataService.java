@@ -3,6 +3,7 @@ package services;
 import com.mongodb.client.model.*;
 import io.mangoo.core.Config;
 import io.mangoo.persistence.interfaces.Datastore;
+import io.mangoo.utils.Arguments;
 import jakarta.inject.Inject;
 import models.App;
 import models.User;
@@ -12,9 +13,10 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 import static com.mongodb.client.model.Filters.*;
-import static org.apache.fury.codegen.ExpressionUtils.neq;
 
 public class DataService {
+    private static final Pattern APP_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9-_]{1,100}$");
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     private final Datastore datastore;
     private final Config config;
 
@@ -56,29 +58,54 @@ public class DataService {
     }
 
     public void save(Object object) {
+        Objects.requireNonNull(object, "object can not be null");
         datastore.save(object);
     }
 
     public App findApp(String appId) {
-        return datastore.find(App.class, eq("appId", appId));
+        Arguments.requireNonBlank(appId, "appId can not be null");
+
+        if (APP_ID_PATTERN.matcher(appId).matches()) {
+            return datastore.find(App.class, eq("appId", appId));
+        }
+
+        return null;
     }
 
     public void delete(String appId) {
-        App app = findApp(appId);
-        datastore.delete(app);
+        Arguments.requireNonBlank(appId, "appId can not be null");
+
+        if (APP_ID_PATTERN.matcher(appId).matches()) {
+            App app = findApp(appId);
+            datastore.delete(app);
+        }
     }
 
     public User findUser(String username) {
-        return datastore.find(User.class,
-                eq("username", username));
+        Arguments.requireNonBlank(username, "username can not be null");
+
+        if (USERNAME_PATTERN.matcher(username).matches()) {
+            return datastore.find(User.class, eq("username", username));
+        }
+
+        return null;
     }
 
     public User findUser(String username, String appId) {
-        return datastore.find(User.class,
-                and(eq("username", username), eq("appId", appId)));
+        Arguments.requireNonBlank(username, "username can not be null");
+        Arguments.requireNonBlank(appId, "appId can not be null");
+
+        if (USERNAME_PATTERN.matcher(username).matches() && APP_ID_PATTERN.matcher(appId).matches()) {
+            return datastore.find(User.class,
+                    and(eq("username", username), eq("appId", appId)));
+        }
+
+        return null;
     }
 
     public void removeUsersFromApp(String appId) {
+        Arguments.requireNonBlank(appId, "appId can not be null");
+
         App app = findApp(appId);
         if (app != null) {
             datastore.query("users").deleteMany(eq("appId", appId));

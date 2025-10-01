@@ -20,19 +20,33 @@ document.querySelectorAll('.deleteBtn').forEach(function(button){
     });
 });
 
-const copyIcons = document.querySelectorAll('.copy');
-copyIcons.forEach(icon => {
-    icon.addEventListener('click', (event) => {
-        const target = event.currentTarget;
-        const textToCopy = target.value;
+const modal = document.getElementById('exampleModal');
+const modalBody = document.getElementById('modalBody');
 
-        const status = target.nextElementSibling;
-        navigator.clipboard.writeText(textToCopy)
-            .then(() => {
-                if (status && status.classList.contains('copy-status')) {
-                    status.textContent = 'Copied!';
-                    setTimeout(() => { status.textContent = ''; }, 2000);
-                }
-            });
+document.querySelectorAll('.open-modal-btn').forEach(btn => {
+    btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        const appId = this.getAttribute('data-app-id');
+        modal.classList.add('is-active');
+        modalBody.innerHTML = '<div class="has-text-grey">Loading...</div>';
+        fetch('/dashboard/app/' + appId + '/info')
+            .then(response => response.text())
+            .then(html => { modalBody.innerHTML = html; })
+            .catch(() => { modalBody.innerHTML = '<div class="has-text-danger">Failed to load content.</div>'; });
     });
 });
+
+modal.addEventListener('click', function(e) {
+    if (
+        e.target.classList.contains('delete') ||
+        e.target.classList.contains('modal-background') ||
+        e.target.classList.contains('close-modal-btn')
+    ) {
+        closeModal();
+    }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+function closeModal() {
+    modal.classList.remove('is-active');
+}

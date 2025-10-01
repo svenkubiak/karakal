@@ -1,6 +1,8 @@
 package app;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import constants.Const;
+import controllers.AssetController;
 import controllers.DashboardController;
 import controllers.PasskeyController;
 import io.mangoo.cache.Cache;
@@ -35,8 +37,14 @@ public class Bootstrap implements MangooBootstrap {
                 On.get().to("/dashboard/logout").respondeWith("logout"),
                 On.get().to("/dashboard/app").respondeWith("app"),
                 On.get().to("/dashboard/app/{appId}").respondeWith("app"),
+                On.get().to("/dashboard/app/{appId}/info").respondeWith("info"),
                 On.post().to("/dashboard/app").respondeWith("save"),
                 On.delete().to("/dashboard/app/{appId}").respondeWith("delete")
+        );
+
+        Bind.controller(AssetController.class).withRoutes(
+                On.get().to("/api/v1/assets/{appId}/karakal.min.js").respondeWith("scripts"),
+                On.get().to("/api/v1/assets/{appId}/karakal.min.css").respondeWith("styles")
         );
 
         Bind.controller(PasskeyController.class).withRoutes(
@@ -58,7 +66,7 @@ public class Bootstrap implements MangooBootstrap {
                 .expireAfterWrite(Duration.of(60, ChronoUnit.SECONDS))
                 .build());
 
-        Application.getInstance(CacheProvider.class).addCache("karakal", karakalCache);
+        Application.getInstance(CacheProvider.class).addCache(Const.KARAKAL_CACHE_NAME, karakalCache);
     }
 
     @Override

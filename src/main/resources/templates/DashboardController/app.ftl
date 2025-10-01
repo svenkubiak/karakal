@@ -95,7 +95,7 @@
                 </div>
                 <div class="field has-text-left">
                     <label class="checkbox">
-                        <input type="checkbox" name="registration" value="1">
+                        <input type="checkbox" name="registration" value="true" <#if (app.registration)?? && app.registration>checked</#if>>
                         <span class="icon is-left"><i class="fas fa-user-plus"></i></span>
                         Allow new registrations
                     </label>

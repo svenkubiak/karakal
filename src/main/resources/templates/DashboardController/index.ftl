@@ -29,24 +29,19 @@
                     </header>
                     <div class="card-content">
                         <div class="tags">
+                            <span class="tag is-info">${app.domain}</span>
                             <#if app.registration>
                                 <span class="tag is-info">Registration enabled</span>
                             <#else>
                                 <span class="tag is-warning">Registration disabled</span>
                             </#if>
                         </div>
-                        <div class="field mt-4">
-                            <label class="label">Application Id</label>
-                            <div class="control has-icons-right">
-                                <input class="input copy" type="text" value="${app.appId}" readonly>
-                                <span class="copy-status" style="margin-left:8px; color:green;"></span>
-                                <span class="icon is-small is-right" style="cursor:pointer;" title="Copy">
-                <i class="fas fa-copy"></i>
-              </span>
-                            </div>
-                        </div>
                     </div>
                     <footer class="card-footer is-justify-content-flex-end">
+                        <a href="/dashboard" class="card-footer-item has-text-right open-modal-btn" data-app-id="${app.appId}" title="Info">
+            <span class="icon is-small">
+              <i class="fas fa-info-circle"></i>
+            </span>
                         <a href="/dashboard/app/${app.appId}" class="card-footer-item has-text-right" title="Edit">
             <span class="icon is-small">
               <i class="fas fa-edit"></i>
@@ -65,4 +60,26 @@
         </#list>
     </div>
 </div>
+
+<div class="modal" id="exampleModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">App information</p>
+            <button class="delete" aria-label="close"></button>
+        </header>
+        <section class="modal-card-body" id="modalBody">
+            <div class="has-text-grey">Loading...</div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button close-modal-btn">Close</button>
+        </footer>
+    </div>
+</div>
+
+<script>
+
+
+</script>
+
 </@layout.myLayout>
