@@ -30,6 +30,15 @@
             </div>
             <div class="field has-text-left">
                 <label class="label">
+                    Public Key
+                </label>
+                <p class="control has-icons-left ">
+                    <input class="input" type="text" name="name" disabled value="https://${app.domain}/api/v1/app/${app.appId}/.well-known/jwks.json">
+                    <span class="icon is-left"><i class="fas fa-globe"></i></span>
+                </p>
+            </div>
+            <div class="field has-text-left">
+                <label class="label">
                     CSS URL
                 </label>
                 <p class="control has-icons-left ">
