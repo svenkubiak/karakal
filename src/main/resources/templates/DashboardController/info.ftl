@@ -33,7 +33,7 @@
                     Public Key
                 </label>
                 <p class="control has-icons-left ">
-                    <input class="input" type="text" name="name" disabled value="https://${app.domain}/api/v1/app/${app.appId}/.well-known/jwks.json">
+                    <input class="input" type="text" name="name" disabled value="${url}/api/v1/app/${app.appId}/.well-known/jwks.json">
                     <span class="icon is-left"><i class="fas fa-globe"></i></span>
                 </p>
             </div>

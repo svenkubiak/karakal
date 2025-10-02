@@ -79,7 +79,7 @@ public class DashboardController {
             app = dataService.findApp(appId);
         }
 
-        return Response.ok().render("app", app);
+        return Response.ok().render("app", app).render("url", config.getString("karakal.url"));
     }
 
 
