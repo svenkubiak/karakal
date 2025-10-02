@@ -2,26 +2,20 @@
 
 default:
   application:
+    name: Karakal
     language: en
     url: env{}
     secret: env{}
     registration: env{}
+  vault:
+    enable: false
   connector:
     http:
       host: 0.0.0.0
       port: 9090
-  api:
-    accessToken:
-      key: env{}
-      secret: env{}
-      expires: 5 # Minutes
-    refreshToken:
-      secret: env{}
-      key: env{}
-      expires: 10080 # Minutes (7 days)
-    challengeToken:
-      key: env{}
-      secret: env{}
+  karakal:
+    url: env{}
+    domain: env{}
   session:
     cookie:
       name: __Host-karakal-session
@@ -70,6 +64,6 @@ default:
 environments:
   prod:
     application:
-      name: karakal
+      name: Karakal
 
 ### Do not change anything unless you know what you are doing ###

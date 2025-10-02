@@ -1,13 +1,10 @@
 #!/bin/bash
 
-# Set variables
 CONFIG_URL="https://raw.githubusercontent.com/svenkubiak/karakal/refs/heads/main/config.yaml"
 COMPOSE_URL="https://raw.githubusercontent.com/svenkubiak/karakal/refs/heads/main/compose.yaml"
 
-# Fix locale to avoid "Illegal byte sequence" error
 export LC_CTYPE=C.UTF-8
 
-# Generate a random 64-character secret (retained for future use)
 generate_secret() {
   tr -dc 'A-Za-z0-9' </dev/urandom | head -c 64
 }
@@ -32,12 +29,6 @@ MONGODB_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
 PERSISTENCE_MONGO_USERNAME=${MONGODB_USERNAME}
 PERSISTENCE_MONGO_PASSWORD=${MONGODB_PASSWORD}
 APPLICATION_SECRET=$(generate_secret)
-API_ACCESSTOKEN_SECRET=$(generate_secret)
-API_ACCESSTOKEN_KEY=$(generate_secret)
-API_REFRESHTOKEN_SECRET=$(generate_secret)
-API_REFRESHTOKEN_KEY=$(generate_secret)
-API_CHALLENGETOKEN_SECRET=$(generate_secret)
-API_CHALLENGETOKEN_KEY=$(generate_secret)
 SESSION_COOKIE_SECRET=$(generate_secret)
 SESSION_COOKIE_KEY=$(generate_secret)
 AUTHENTICATION_COOKIE_SECRET=$(generate_secret)
