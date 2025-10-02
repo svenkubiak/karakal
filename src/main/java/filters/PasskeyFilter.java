@@ -36,8 +36,6 @@ public class PasskeyFilter implements PerRequestFilter {
 
     @Override
     public Response execute(Request request, Response response) {
-        return response;
-        /**
         var cookie = request.getCookie(Const.COOKIE_NAME);
         if (cookie != null) {
             var cookieValue = cookie.getValue();
@@ -52,7 +50,6 @@ public class PasskeyFilter implements PerRequestFilter {
         }
 
         return Response.redirect("/dashboard/login");
-         **/
     }
 
     private void validateJwt(String jwt) throws Exception {
