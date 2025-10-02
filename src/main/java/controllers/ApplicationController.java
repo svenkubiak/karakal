@@ -4,6 +4,10 @@ import io.mangoo.routing.Response;
 
 public class ApplicationController {
 
+    public Response index() {
+        return Response.ok().render();
+    }
+
     public Response health() {
         return Response.ok().bodyText("OK");
     }

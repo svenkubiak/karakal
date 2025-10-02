@@ -38,7 +38,7 @@
                         </div>
                     </div>
                     <footer class="card-footer is-justify-content-flex-end">
-                        <a href="/dashboard" class="card-footer-item has-text-right open-modal-btn" data-app-id="${app.appId}" title="Info">
+                        <a href="/dashboard/app/${app.appId}/info" class="card-footer-item has-text-right open-modal-btn" title="Info">
             <span class="icon is-small">
               <i class="fas fa-info-circle"></i>
             </span>

@@ -23,19 +23,6 @@ document.querySelectorAll('.deleteBtn').forEach(function(button){
 const modal = document.getElementById('exampleModal');
 const modalBody = document.getElementById('modalBody');
 
-document.querySelectorAll('.open-modal-btn').forEach(btn => {
-    btn.addEventListener('click', function (event) {
-        event.preventDefault();
-        const appId = this.getAttribute('data-app-id');
-        modal.classList.add('is-active');
-        modalBody.innerHTML = '<div class="has-text-grey">Loading...</div>';
-        fetch('/dashboard/app/' + appId + '/info')
-            .then(response => response.text())
-            .then(html => { modalBody.innerHTML = html; })
-            .catch(() => { modalBody.innerHTML = '<div class="has-text-danger">Failed to load content.</div>'; });
-    });
-});
-
 modal.addEventListener('click', function(e) {
     if (
         e.target.classList.contains('delete') ||

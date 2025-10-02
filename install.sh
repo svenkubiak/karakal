@@ -18,9 +18,7 @@ MONGODB_PASSWORD=$(generate_secret)
 cat > .env <<EOL
 # Custom configuration
 VERSION=latest
-
 KARAKAL_URL=http://localhost
-KARAKAL_DOMAIN=localhost
 
 # Auto generated - Change at your own risk
 MONGODB_INITDB_DATABASE=karakal

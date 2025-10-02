@@ -33,6 +33,7 @@ public class Bootstrap implements MangooBootstrap {
     @Override
     public void initializeRoutes() {
         Bind.controller(ApplicationController.class).withRoutes(
+                On.get().to("/").respondeWith("index"),
                 On.get().to("/health").respondeWith("health")
         );
 

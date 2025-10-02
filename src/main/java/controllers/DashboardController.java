@@ -41,17 +41,18 @@ public class DashboardController {
     public Response logout(Session session) {
         session.clear();
 
-        Cookie c = new CookieImpl(Const.COOKIE_NAME)
+        App dashboard = dataService.findDashboard();
+        Cookie cookie = new CookieImpl(Const.COOKIE_NAME)
                 .setPath("/")
                 .setSecure(true)
-                .setDomain(config.getString("karakal.domain"))
+                .setDomain(dashboard.getDomain())
                 .setValue("")
                 .setMaxAge(-1)
                 .setDiscard(true)
                 .setExpires(new Date(1));
 
         return Response.redirect("/dashboard/login")
-                .cookie(c)
+                .cookie(cookie)
                 .header("Clear-Site-Data", "*");
     }
 

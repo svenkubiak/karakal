@@ -15,7 +15,6 @@ default:
       port: 9090
   karakal:
     url: env{}
-    domain: env{}
   session:
     cookie:
       name: __Host-karakal-session

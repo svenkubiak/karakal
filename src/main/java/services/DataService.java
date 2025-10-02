@@ -1,13 +1,19 @@
 package services;
 
 import com.mongodb.client.model.*;
+import controllers.PasskeyController;
 import io.mangoo.core.Config;
 import io.mangoo.persistence.interfaces.Datastore;
 import io.mangoo.utils.Arguments;
 import jakarta.inject.Inject;
 import models.App;
 import models.User;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -15,6 +21,7 @@ import java.util.regex.Pattern;
 import static com.mongodb.client.model.Filters.*;
 
 public class DataService {
+    private static final Logger LOG = LogManager.getLogger(DataService.class);
     private static final Pattern APP_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9-_]{1,100}$");
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     private final Datastore datastore;
@@ -29,11 +36,17 @@ public class DataService {
     public void init() {
         App dashboard = datastore.find(App.class, eq("name", "dashboard"));
         if (dashboard == null) {
-            dashboard = new App("dashboard");
-            dashboard.setAudience(config.getString("karakal.url"));
-            dashboard.setRedirect(config.getString("karakal.url") + "/dashboard");
-            dashboard.setDomain(config.getString("karakal.domain"));
-            datastore.save(dashboard);
+            try {
+                String karakalUrl = config.getString("karakal.url");
+                URL url = URI.create(karakalUrl).toURL();
+                dashboard = new App("dashboard");
+                dashboard.setAudience(karakalUrl);
+                dashboard.setRedirect(karakalUrl + "/dashboard");
+                dashboard.setDomain(url.getHost());
+                datastore.save(dashboard);
+            } catch (MalformedURLException e) {
+                LOG.error("Failed to parse karakal.url", e);
+            }
         }
     }
 
