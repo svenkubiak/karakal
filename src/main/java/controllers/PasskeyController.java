@@ -47,7 +47,7 @@ public class PasskeyController {
         App app = dataService.findApp(appId);
         if (app != null) {
             try {
-                byte[] keyBytes = CommonUtils.urlDecodeFromBase64(app.getPublicKey());
+                byte[] keyBytes = CommonUtils.decodeFromBase64(app.getPublicKey());
                 RSAPublicKey publicKey = (RSAPublicKey) KeyFactory
                         .getInstance("RSA")
                         .generatePublic(new X509EncodedKeySpec(keyBytes));
