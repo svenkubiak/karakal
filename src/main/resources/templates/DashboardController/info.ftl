@@ -1,7 +1,5 @@
 <#import "../layout.ftl" as layout>
 <@layout.myLayout "Layout">
-<#assign styleTag = "<script src=\"/api/v1/assets/" + app.appId + "/karakal.min.css\"></script>">
-<#assign scriptTag = "<script src=\"/api/v1/assets/" + app.appId + "/karakal.min.js\"></script>">
 <div class="container">
     <div class="columns mt-6">
         <div class="column is-half">
@@ -42,7 +40,7 @@
                     CSS URL
                 </label>
                 <p class="control has-icons-left ">
-                    <input class="input" type="text" name="name" disabled value="${styleTag}">
+                    <input class="input" type="text" name="name" disabled value="${url}/api/v1/assets/${app.appId}/karakal.min.css">
                     <span class="icon is-left"><i class="fas fa-scroll"></i></span>
                 </p>
             </div>
@@ -60,7 +58,7 @@
                     Script URL
                 </label>
                 <p class="control has-icons-left ">
-                    <input class="input" type="text" name="name" disabled value="${scriptTag}">
+                    <input class="input" type="text" name="name" disabled value="${url}/api/v1/assets/${app.appId}/karakal.min.js">
                     <span class="icon is-left"><i class="fas fa-scroll"></i></span>
                 </p>
             </div>
