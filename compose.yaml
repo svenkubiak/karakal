@@ -7,7 +7,7 @@ services:
       - .env
     environment:
       JAVA_OPTS: >
-        -Dapplication.config=/app/config/config.yaml  
+        -Dapplication.config=/app/config/config.yaml
         -Xms256m
         -Xmx1024m
     ports:

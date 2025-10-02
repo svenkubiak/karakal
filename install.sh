@@ -67,6 +67,6 @@ curl -s -O "$COMPOSE_URL"
 # Step 6: Installation complete
 echo "6/6 Installation complete!"
 echo ""
-echo "Please configure your specific environment in your compose.yaml and remove this script."
+echo "Please configure your specific environment in your compose.yaml."
 echo "Enjoy Karakal!"
 
