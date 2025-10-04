@@ -47,140 +47,15 @@ function error() {
       <p class="subtitle is-6">Oops... something went wrong.<br>Please try again.</p>
     </div>
     <div class="mt-4 has-text-centered">
-      <button class="button is-danger is-fullwidth" id="to-register">Try again</button>
+      <button class="button is-danger is-fullwidth" id="try-again">Try again</button>
     </div>
 </div>
 </main>
 `;
 }
 
-if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
-    console.log("Karakal-Auth-Init complete");
-
-    function base64urlToBuffer(base64url) {
-        if (typeof base64url !== "string") {
-            if (base64url instanceof ArrayBuffer) return base64url;
-            if (ArrayBuffer.isView(base64url)) return base64url.buffer;
-        }
-        let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-        while (base64.length % 4) base64 += '=';
-        let str = atob(base64);
-        let bytes = new Uint8Array(str.length);
-        for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
-        return bytes.buffer;
-    }
-
-    function bufferToBase64Url(buffer) {
-        let bytes = new Uint8Array(buffer);
-        let str = "";
-        for (let i = 0; i < bytes.length; ++i) str += String.fromCharCode(bytes[i]);
-        let base64 = btoa(str);
-        return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    }
-
-    async function registerInit(username) {
-        const res = await fetch('${api}/api/v1/register-init', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username, appId})
-        });
-
-        let options = await res.json();
-
-        if (typeof options.challenge === "object" && options.challenge !== null && 'value' in options.challenge) {
-            options.challenge = base64urlToBuffer(options.challenge.value);
-        } else if (typeof options.challenge === "string") {
-            options.challenge = base64urlToBuffer(options.challenge);
-        }
-
-        if (typeof options.user.id === "string") {
-            options.user.id = base64urlToBuffer(options.user.id);
-        }
-
-        const credential = await navigator.credentials.create({publicKey: options});
-
-        const serializedCredential = {
-            id: credential.id,
-            rawId: bufferToBase64Url(credential.rawId),
-            type: credential.type,
-            response: {
-                clientDataJSON: bufferToBase64Url(credential.response.clientDataJSON),
-                attestationObject: bufferToBase64Url(credential.response.attestationObject)
-            },
-            authenticatorAttachment: credential.authenticatorAttachment
-        };
-
-        const res2 = await fetch('${api}/api/v1/register-complete', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'karakal-username': username, 'karakal-app-id': appId},
-            body: JSON.stringify(serializedCredential)
-        });
-
-        if (res2.status === 200) {
-            container.innerHTML = success();
-            const toLogin = document.getElementById("to-login");
-            toLogin.addEventListener('click', function (e) {
-                e.preventDefault();
-                showForm('login');
-            });
-        } else {
-            container.innerHTML = error();
-            const toRegister = document.getElementById("to-register");
-            toRegister.addEventListener('click', function (e) {
-                e.preventDefault();
-                showForm('register');
-            });
-        }
-
-    }
-
-    async function loginInit(username) {
-        const res = await fetch('${api}/api/v1/login-init', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username, appId})
-        });
-        const options = await res.json();
-
-        options.allowCredentials.forEach(cred => {
-            if (typeof cred.id === "string") {
-                cred.id = base64urlToBuffer(cred.id);
-            }
-        });
-
-        if (typeof options.challenge === "string") {
-            options.challenge = base64urlToBuffer(options.challenge);
-        }
-
-        const assertion = await navigator.credentials.get({publicKey: options});
-        const resp = await fetch('${api}/api/v1/login-complete', {
-            method: 'POST',
-            body: JSON.stringify(assertion),
-            headers: {'Content-Type': 'application/json', 'karakal-username': username, 'karakal-app-id': appId},
-        });
-
-        if (resp.status === 200) {
-            localStorage.setItem('username', username);
-            const data = await resp.json();
-            const name = data.name;
-            const jwt = data.jwt;
-            const maxAge = data.maxAge;
-            const redirect= data.redirect;
-
-            document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(jwt) +
-                "; max-age=" + maxAge +
-                "; path=/" +
-                "; SameSite=Strict" +
-                "; Secure";
-
-            window.location.replace(redirect);
-        } else {
-            container.innerHTML = error();
-        }
-    }
-
-    function getLoginFormHTML() {
-        return `
+function loginForm() {
+    return `
 <main>
   <div class="auth-box">
     <h1 class="title auth-title">Sign In</h1>
@@ -205,10 +80,10 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
   </div>
 </main>
 `;
-    }
+}
 
-    function getRegisterFormHTML() {
-        return `
+function registerForm() {
+    return `
 <main>
   <div class="auth-box" id="register">
     <h1 class="title auth-title">Register</h1>
@@ -227,11 +102,150 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
   </div>
 </main>
 `;
+}
+
+if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
+    console.log("karakal-auth-init complete");
+
+    function loadCss(url) {
+        return new Promise((resolve, reject) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = url;
+            link.onload = () => resolve();
+            link.onerror = () => reject(new Error('CSS load failed: ' + url));
+            document.head.appendChild(link);
+        });
+    }
+
+    function base64urlToBuffer(base64url) {
+        if (typeof base64url !== "string") {
+            if (base64url instanceof ArrayBuffer) return base64url;
+            if (ArrayBuffer.isView(base64url)) return base64url.buffer;
+        }
+        let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) base64 += '=';
+        let str = atob(base64);
+        let bytes = new Uint8Array(str.length);
+        for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
+        return bytes.buffer;
+    }
+
+    function bufferToBase64Url(buffer) {
+        let bytes = new Uint8Array(buffer);
+        let str = "";
+        for (let i = 0; i < bytes.length; ++i) str += String.fromCharCode(bytes[i]);
+        let base64 = btoa(str);
+        return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    async function register(username) {
+        const registerInitResponse = await fetch('${api}/api/v1/register-init', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, appId})
+        });
+
+        if (registerInitResponse.ok) {
+            const options = await registerInitResponse.json();
+
+            if (typeof options.challenge === "object" && options.challenge !== null && 'value' in options.challenge) {
+                options.challenge = base64urlToBuffer(options.challenge.value);
+            } else if (typeof options.challenge === "string") {
+                options.challenge = base64urlToBuffer(options.challenge);
+            }
+
+            if (typeof options.user.id === "string") {
+                options.user.id = base64urlToBuffer(options.user.id);
+            }
+
+            const credential = await navigator.credentials.create({publicKey: options});
+
+            const serializedCredential = {
+                id: credential.id,
+                rawId: bufferToBase64Url(credential.rawId),
+                type: credential.type,
+                response: {
+                    clientDataJSON: bufferToBase64Url(credential.response.clientDataJSON),
+                    attestationObject: bufferToBase64Url(credential.response.attestationObject)
+                },
+                authenticatorAttachment: credential.authenticatorAttachment
+            };
+
+            const registerCompleteResponse = await fetch('${api}/api/v1/register-complete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'karakal-username': username, 'karakal-app-id': appId},
+                body: JSON.stringify(serializedCredential)
+            });
+
+            if (registerCompleteResponse.ok) {
+                container.innerHTML = success();
+                const toLogin = document.getElementById("to-login");
+                toLogin.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    showForm('login');
+                });
+            } else {
+                container.innerHTML = error();
+            }
+        } else {
+            container.innerHTML = error();
+        }
+    }
+
+    async function login(username) {
+        const loginInitResponse = await fetch('${api}/api/v1/login-init', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, appId})
+        });
+
+        if (loginInitResponse.ok) {
+            const options = await loginInitResponse.json();
+
+            options.allowCredentials.forEach(cred => {
+                if (typeof cred.id === "string") {
+                    cred.id = base64urlToBuffer(cred.id);
+                }
+            });
+
+            if (typeof options.challenge === "string") {
+                options.challenge = base64urlToBuffer(options.challenge);
+            }
+
+            const assertion = await navigator.credentials.get({publicKey: options});
+            const loginCompleteResponse = await fetch('${api}/api/v1/login-complete', {
+                method: 'POST',
+                body: JSON.stringify(assertion),
+                headers: {'Content-Type': 'application/json', 'karakal-username': username, 'karakal-app-id': appId},
+            });
+
+            if (loginCompleteResponse.ok) {
+                localStorage.setItem('username', username);
+                const data = await loginCompleteResponse.json();
+                const name = data.name;
+                const jwt = data.jwt;
+                const maxAge = data.maxAge;
+                const redirect= data.redirect;
+
+                document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(jwt) +
+                    "; max-age=" + maxAge +
+                    "; path=/" +
+                    "; SameSite=Strict" +
+                    "; Secure";
+
+                window.location.replace(redirect);
+            } else {
+                container.innerHTML = error();
+            }
+        } else {
+            container.innerHTML = error();
+        }
     }
 
     function showForm(formType) {
         if (formType === 'login') {
-            container.innerHTML = getLoginFormHTML();
+            container.innerHTML = loginForm();
 
             const usernameInput = document.getElementById("username");
             if (usernameInput) {
@@ -261,22 +275,22 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                 })
             }
 
-            const login = document.getElementById("login-init");
-            if (login) {
-                login.addEventListener('click', function (e) {
+            const loginInit = document.getElementById("login-init");
+            if (loginInit) {
+                loginInit.addEventListener('click', function (e) {
                     e.preventDefault();
                     const username = document.getElementById("username").value;
                     if (username) {
-                        loginInit(username);
+                        login(username);
                     }
                 });
 
-                document.getElementById("username").addEventListener('keydown', function (event) {
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
+                document.getElementById("username").addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
                         const username = document.getElementById("username").value;
                         if (username) {
-                            loginInit(username);
+                            login(username);
                         }
                     }
                 });
@@ -290,24 +304,24 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                 });
             }
         } else {
-            container.innerHTML = getRegisterFormHTML();
+            container.innerHTML = registerForm();
 
-            const register = document.getElementById("register-init");
-            if (register) {
-                register.addEventListener('click', function (e) {
+            const registerInit = document.getElementById("register-init");
+            if (registerInit) {
+                registerInit.addEventListener('click', function (e) {
                     e.preventDefault();
                     const username = document.getElementById("username").value;
                     if (username) {
-                        registerInit(username);
+                        register(username);
                     }
                 });
 
-                document.getElementById("username").addEventListener('keydown', function (event) {
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
+                document.getElementById("username").addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
                         const username = document.getElementById("username").value;
                         if (username) {
-                            registerInit(username);
+                            register(username);
                         }
                     }
                 });
@@ -323,5 +337,18 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
         }
     }
 
-    showForm('login');
+    Promise.all([
+        loadCss("${api}/assets/css/bulma.min.css"),
+        loadCss("${api}/api/v1/assets/${appId}/karakal.min.css")
+    ]).then(() => {
+        showForm('login');
+    });
+
+    const tryAgain = document.getElementById("try-again");
+    if (tryAgain) {
+        tryAgain.addEventListener('click', function (e) {
+            e.preventDefault();
+            showForm('login');
+        });
+    }
 }

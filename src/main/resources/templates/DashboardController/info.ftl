@@ -31,17 +31,8 @@
                     Public Key
                 </label>
                 <p class="control has-icons-left ">
-                    <input class="input" type="text" name="name" disabled value="${url}/api/v1/app/${app.appId}/.well-known/jwks.json">
+                    <input class="input" type="text" name="name" disabled value="${url}/api/v1/app/${app.appId}/jwks.json">
                     <span class="icon is-left"><i class="fas fa-globe"></i></span>
-                </p>
-            </div>
-            <div class="field has-text-left">
-                <label class="label">
-                    CSS URL
-                </label>
-                <p class="control has-icons-left ">
-                    <input class="input" type="text" name="name" disabled value="${url}/api/v1/assets/${app.appId}/karakal.min.css">
-                    <span class="icon is-left"><i class="fas fa-scroll"></i></span>
                 </p>
             </div>
             <div class="field has-text-left">
