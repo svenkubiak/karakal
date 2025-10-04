@@ -1,6 +1,7 @@
 package controllers;
 
 import com.google.re2j.Pattern;
+import constants.Const;
 import filters.PasskeyFilter;
 import io.mangoo.annotations.FilterWith;
 import io.mangoo.core.Config;
@@ -14,13 +15,11 @@ import jakarta.inject.Inject;
 import models.App;
 import org.apache.commons.lang3.StringUtils;
 import services.DataService;
+import utils.AppUtils;
 
-import java.net.URI;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import constants.Const;
-import utils.AppUtils;
 
 public class DashboardController {
     private static final Pattern NAME_PATTERN = Pattern.compile("^[A-Za-z0-9_\\- ]{3,64}$");

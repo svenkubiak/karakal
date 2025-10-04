@@ -1,6 +1,5 @@
 package utils;
 
-import com.webauthn4j.data.client.challenge.DefaultChallenge;
 import constants.Const;
 import io.mangoo.cache.Cache;
 import io.mangoo.cache.CacheProvider;

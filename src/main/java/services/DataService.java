@@ -2,7 +2,6 @@ package services;
 
 import com.google.common.base.Preconditions;
 import com.mongodb.client.model.*;
-import controllers.PasskeyController;
 import io.mangoo.core.Config;
 import io.mangoo.persistence.interfaces.Datastore;
 import io.mangoo.utils.Arguments;
@@ -13,9 +12,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import utils.AppUtils;
 
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;

@@ -1,6 +1,5 @@
 package controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webauthn4j.WebAuthnManager;
 import com.webauthn4j.data.*;
 import com.webauthn4j.data.attestation.AttestationObject;
@@ -18,13 +17,10 @@ import io.mangoo.routing.Response;
 import io.mangoo.routing.bindings.Request;
 import io.mangoo.utils.CommonUtils;
 import io.mangoo.utils.JsonUtils;
-import io.undertow.server.handlers.Cookie;
-import io.undertow.server.handlers.CookieImpl;
 import jakarta.inject.Inject;
 import models.App;
 import models.Credential;
 import models.User;
-import org.apache.commons.compress.utils.Lists;
 import org.apache.fury.util.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -115,6 +111,8 @@ public class PasskeyController {
                             .header("Access-Control-Allow-Origin", app.getUrl())
                             .bodyJson(options);
                 }
+            } else {
+                return Response.notFound();
             }
         }
 
@@ -194,8 +192,10 @@ public class PasskeyController {
 
                     return Response.ok().header("Access-Control-Allow-Origin", app.getUrl());
                 }
+            } else {
+                return Response.notFound();
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOG.error("Failed to complete registration", e);
             return Response.badRequest();
         }
@@ -229,6 +229,8 @@ public class PasskeyController {
                 response.put("userVerification", "preferred");
 
                 return Response.ok().header("Access-Control-Allow-Origin", app.getUrl()).bodyJson(response);
+            } else {
+                Response.notFound();
             }
         }
 
@@ -255,10 +257,6 @@ public class PasskeyController {
             );
 
             Map coseMap = JsonUtils.getMapper().readValue(user.getCoseKey(), Map.class);
-
-            //int keyType = Integer.parseInt(coseMap.get("1").toString());
-            //int algorithm = Integer.parseInt(coseMap.get("3").toString());
-            //int crv = Integer.parseInt(coseMap.get("-1").toString());
             byte[] x = CommonUtils.decodeFromBase64((String) coseMap.get("-2"));
             byte[] y = CommonUtils.decodeFromBase64((String) coseMap.get("-3"));
 
