@@ -29,7 +29,7 @@
                     </header>
                     <div class="card-content">
                         <div class="tags">
-                            <span class="tag is-info">${app.domain}</span>
+                            <span class="tag is-info">${app.url}</span>
                             <#if app.registration>
                                 <span class="tag is-info">Registration enabled</span>
                             <#else>

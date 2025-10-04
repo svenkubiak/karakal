@@ -59,7 +59,7 @@ public class PasskeyFilter implements PerRequestFilter {
         var jwtConsumer = new JwtConsumerBuilder()
                 .setExpectedAudience(dashboard.getAudience())
                 .setRequireExpirationTime()
-                .setExpectedIssuer(dashboard.getDomain())
+                .setExpectedIssuer(dashboard.getUrl())
                 .setEnableRequireIntegrity()
                 .setVerificationKey(getPublicKey())
                 .build();

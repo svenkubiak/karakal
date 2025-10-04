@@ -54,15 +54,20 @@ public class Bootstrap implements MangooBootstrap {
         );
 
         Bind.controller(PasskeyController.class).withRoutes(
-                On.get().to("/api/v1/app/{appId}/.well-known/jwks.json").respondeWith("wellKnown"),
+                On.get().to("/api/v1/app/{appId}/jwks.json").respondeWith("jwks"),
                 On.post().to("/api/v1/register-init").respondeWith("registerInit"),
                 On.post().to("/api/v1/register-complete").respondeWith("registerComplete"),
                 On.post().to("/api/v1/login-init").respondeWith("loginInit"),
-                On.post().to("/api/v1/login-complete").respondeWith("loginComplete")
+                On.post().to("/api/v1/login-complete").respondeWith("loginComplete"),
+                On.options().to("/api/v1/register-init").respondeWith("preflight"),
+                On.options().to("/api/v1/register-complete").respondeWith("preflight"),
+                On.options().to("/api/v1/login-init").respondeWith("preflight"),
+                On.options().to("/api/v1/login-complete").respondeWith("preflight")
         );
         
         Bind.pathResource().to("/assets/");
         Bind.fileResource().to("/robots.txt");
+        Bind.fileResource().to("/favicon.ico");
     }
     
     @Override

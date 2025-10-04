@@ -19,10 +19,10 @@
             </div>
             <div class="field has-text-left">
                 <label class="label">
-                    Domain
+                    URL
                 </label>
                 <p class="control has-icons-left ">
-                    <input class="input" type="text" name="name" disabled value="${app.domain}">
+                    <input class="input" type="text" name="name" disabled value="${app.url}">
                     <span class="icon is-left"><i class="fas fa-globe"></i></span>
                 </p>
             </div>

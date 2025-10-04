@@ -18,7 +18,7 @@ public class App extends Entity {
     private String name;
 
     private String redirect;
-    private String domain;
+    private String url;
     private boolean registration;
     private String publicKey;
     private String privateKey;
@@ -58,14 +58,6 @@ public class App extends Entity {
 
     public void setRedirect(String redirect) {
         this.redirect = redirect;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public void setDomain(String domain) {
-        this.domain = domain;
     }
 
     public boolean isRegistration() {
@@ -121,5 +113,13 @@ public class App extends Entity {
     }
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 }

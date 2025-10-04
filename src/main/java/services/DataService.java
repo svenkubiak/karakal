@@ -1,5 +1,6 @@
 package services;
 
+import com.google.common.base.Preconditions;
 import com.mongodb.client.model.*;
 import controllers.PasskeyController;
 import io.mangoo.core.Config;
@@ -10,6 +11,7 @@ import models.App;
 import models.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import utils.AppUtils;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -36,17 +38,12 @@ public class DataService {
     public void init() {
         App dashboard = datastore.find(App.class, eq("name", "dashboard"));
         if (dashboard == null) {
-            try {
-                String karakalUrl = config.getString("karakal.url");
-                URL url = URI.create(karakalUrl).toURL();
-                dashboard = new App("dashboard");
-                dashboard.setAudience(karakalUrl);
-                dashboard.setRedirect(karakalUrl + "/dashboard");
-                dashboard.setDomain(url.getHost());
-                datastore.save(dashboard);
-            } catch (MalformedURLException e) {
-                LOG.error("Failed to parse karakal.url", e);
-            }
+            String karakalUrl = config.getString("karakal.url");
+            dashboard = new App("dashboard");
+            dashboard.setAudience(karakalUrl);
+            dashboard.setRedirect(karakalUrl + "/dashboard");
+            dashboard.setUrl(karakalUrl);
+            datastore.save(dashboard);
         }
     }
 
@@ -128,5 +125,12 @@ public class DataService {
     public boolean appExists(String name) {
         return datastore.find(App.class,
                 regex("name", Pattern.compile(name, Pattern.CASE_INSENSITIVE))) != null;
+    }
+
+    public App findAppByUrl(String url) {
+        Arguments.requireNonBlank(url, "url can not be null or blank");
+        Preconditions.checkArgument(AppUtils.isValidUrl(url), "url is not a valid URL");
+
+        return datastore.find(App.class, eq("url", url));
     }
 }

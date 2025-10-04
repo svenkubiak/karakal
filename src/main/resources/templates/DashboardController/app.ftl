@@ -39,16 +39,16 @@
                 </div>
                 <div class="field has-text-left">
                     <label class="label">
-                        Domain*
+                        URL*
                     </label>
                     <p class="control has-icons-left">
-                        <input class="input <#if form.hasError("domain")>is-danger</#if>" type="text" name="domain" value="<#if (form.domain)??>${form.domain}<#elseif (app.domain)??>${app.domain}</#if>"
-                               placeholder="Host address (e.g. api.myapp.com)">
+                        <input class="input <#if form.hasError("domain")>is-danger</#if>" type="text" name="url" value="<#if (form.url)??>${form.url}<#elseif (app.url)??>${app.url}</#if>"
+                               placeholder="URL address (e.g. https://myapp.com)">
                         <span class="icon is-left"><i class="fas fa-server"></i></span>
                     </p>
-                    <p class="help">The Domain of your application that will be used in the cookie.</p>
-                    <#if form.hasError("domain")>
-                        <p class="help is-danger">${form.getError("domain")}</p>
+                    <p class="help">The url of your application.</p>
+                    <#if form.hasError("url")>
+                        <p class="help is-danger">${form.getError("url")}</p>
                     </#if>
                 </div>
                 <div class="field has-text-left">

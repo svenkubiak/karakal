@@ -1,1 +1,327 @@
-const api="${api}",appId="${appId}",container=document.getElementById("karakal-auth");function success(){return'\n<div class="card success-card">\n    <div class="header">\n        <div class="logo">✓</div>\n        <h1>Success!</h1>\n        <p class="lead">Your registration was completed successfully.</p>\n    </div>\n    <div class="button-container">\n        <button class="btn" id="to-login">Sign in now</button>\n    </div>\n</div>\n'}function error(){return'\n<div class="card error-card">\n    <div class="header">\n        <div class="logo">✕</div>\n        <h1>Error!</h1>\n        <p class="lead">Oops... something went wrong. Please try again.</p>\n    </div>\n    <div class="button-container">\n        <button class="btn" id="to-register">Try again</button>\n    </div>\n</div>\n'}if(""===api.trim()&&(console.log("data-api is missing or empty"),container&&(container.innerHTML=error())),appId&&""!==appId.trim()||(console.log("data-application-id is missing or empty"),container&&(container.innerHTML=error())),container||console.log("Container element with id 'karakal-auth' does not exist"),api&&""!==api.trim()&&appId&&""!==appId.trim()&&container){function base64urlToBuffer(e){if("string"!=typeof e){if(e instanceof ArrayBuffer)return e;if(ArrayBuffer.isView(e))return e.buffer}let n=e.replace(/-/g,"+").replace(/_/g,"/");for(;n.length%4;)n+="=";let t=atob(n),a=new Uint8Array(t.length);for(let e=0;e<t.length;e++)a[e]=t.charCodeAt(e);return a.buffer}function bufferToBase64Url(e){let n=new Uint8Array(e),t="";for(let e=0;e<n.length;++e)t+=String.fromCharCode(n[e]);return btoa(t).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}async function registerInit(e){const n=await fetch("${api}/api/v1/register-init",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:e,appId:appId})});let t=await n.json();"object"==typeof t.challenge&&null!==t.challenge&&"value"in t.challenge?t.challenge=base64urlToBuffer(t.challenge.value):"string"==typeof t.challenge&&(t.challenge=base64urlToBuffer(t.challenge)),"string"==typeof t.user.id&&(t.user.id=base64urlToBuffer(t.user.id));const a=await navigator.credentials.create({publicKey:t}),i={id:a.id,rawId:bufferToBase64Url(a.rawId),type:a.type,response:{clientDataJSON:bufferToBase64Url(a.response.clientDataJSON),attestationObject:bufferToBase64Url(a.response.attestationObject)},authenticatorAttachment:a.authenticatorAttachment};if(200===(await fetch("${api}/api/v1/register-complete",{method:"POST",headers:{"Content-Type":"application/json","karakal-username":e,"karakal-app-id":appId},body:JSON.stringify(i)})).status){container.innerHTML=success();document.getElementById("to-login").addEventListener("click",(function(e){e.preventDefault(),showForm("login")}))}else{container.innerHTML=error();document.getElementById("to-register").addEventListener("click",(function(e){e.preventDefault(),showForm("register")}))}}async function loginInit(e){const n=await fetch("${api}/api/v1/login-init",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:e,appId:appId})}),t=await n.json();t.allowCredentials.forEach((e=>{"string"==typeof e.id&&(e.id=base64urlToBuffer(e.id))})),"string"==typeof t.challenge&&(t.challenge=base64urlToBuffer(t.challenge));const a=await navigator.credentials.get({publicKey:t}),i=await fetch("${api}/api/v1/login-complete",{method:"POST",body:JSON.stringify(a),headers:{"Content-Type":"application/json","karakal-username":e,"karakal-app-id":appId}});200===i.status?(localStorage.setItem("username",e),window.location.replace(i.headers.get("karakal-login-redirect"))):container.innerHTML=error()}function getLoginFormHTML(){return'\n<main class="card" role="main">\n    <div class="header">\n        <h1>Sign In</h1>\n        <p class="lead">Please enter your email address to sign in.</p>\n    </div>\n    <div class="input-group">\n        <label for="username">Email Address</label>\n        <div class="input">\n            <input id="username" name="username" type="text" placeholder="Your email address" required autocomplete="username" />\n        </div>\n <div class="field has-addons" id="different-account">\n  <p class="control is-expanded has-text-centered">\n    <span class="small-text has-text-centered"><a href="#" id="use-different-account">Sign in with another account</a></span>\n  </p>\n</div>\n    </div>\n    <div class="button-container">\n        <button class="btn" id="login-init">Sign In</button>\n    </div>\n    <#if registration>\n        <div class="footer">\n            Don’t have an account? <a href="#" id="register-form">Register now</a>\n        </div>\n    </#if>\n</main>\n'}function getRegisterFormHTML(){return'\n<main class="card" role="main">\n    <div class="header">\n        <h1>Registration</h1>\n        <p class="lead">Please enter an email address to register.</p>\n    </div>\n    <div class="input-group">\n        <label for="username">Email Address</label>\n        <div class="input">\n            <input id="username" name="username" type="text" placeholder="Your email address" required autocomplete="username" />\n        </div>\n    </div>\n    <div class="button-container">\n        <button class="btn" id="register-init">Register</button>\n    </div>\n    <div class="footer">\n        Already have an account? <a href="#" id="login-form">Sign in now</a>\n    </div>\n</main>\n'}function showForm(e){if("login"===e){container.innerHTML=getLoginFormHTML();const e=document.getElementById("username");if(e){const n=localStorage.getItem("username");null!=n&&""!==n&&(e.value=n,document.getElementById("username").disabled=!0)}const n=document.getElementById("use-different-account");n&&n.addEventListener("click",(e=>{e.preventDefault(),document.getElementById("username").disabled=!1,document.getElementById("username").value="",localStorage.removeItem("username");const n=document.getElementById("different-account");n&&n.remove()}));const t=document.getElementById("login-init");t&&t.addEventListener("click",(function(e){e.preventDefault();const n=document.getElementById("username").value;n&&loginInit(n)}));const a=document.getElementById("register-form");a&&a.addEventListener("click",(function(e){e.preventDefault(),showForm("register")}))}else{container.innerHTML=getRegisterFormHTML();const e=document.getElementById("register-init");e&&e.addEventListener("click",(function(e){e.preventDefault();const n=document.getElementById("username").value;n&&registerInit(n)}));const n=document.getElementById("login-form");n&&n.addEventListener("click",(function(e){e.preventDefault(),showForm("login")}))}}console.log("Karakal-Auth-Init complete"),showForm("login")}
+const api = "${api}"
+const appId = "${appId}";
+const container = document.getElementById("karakal-auth");
+
+if (!api || api.trim() === "") {
+console.log("data-api is missing or empty");
+if (container) {
+container.innerHTML = error();
+}
+}
+
+if (!appId || appId.trim() === "") {
+console.log("data-application-id is missing or empty");
+if (container) {
+container.innerHTML = error();
+}
+}
+
+if (!container) {
+console.log("Container element with id 'karakal-auth' does not exist");
+}
+
+function success() {
+return `
+<main>
+    <div class="auth-box">
+        <div class="content has-text-centered">
+            <div class="icon is-large has-text-success" style="font-size: 3rem;">✓</div>
+            <h1 class="title is-4 has-text-success">Success!</h1>
+            <p class="subtitle is-6">Your registration was completed successfully.</p>
+        </div>
+        <div class="mt-4 has-text-centered"">
+        <button class="button is-primary is-fullwidth" id="to-login">Sign in now</button>
+    </div>
+    </div>
+</main>
+`;
+}
+
+function error() {
+return `
+<main>
+    <div class="auth-box">
+        <div class="content has-text-centered">
+            <div class="icon is-large has-text-danger" style="font-size: 3rem;">✕</div>
+            <h1 class="title is-4 has-text-danger">Error!</h1>
+            <p class="subtitle is-6">Oops... something went wrong.<br>Please try again.</p>
+        </div>
+        <div class="mt-4 has-text-centered">
+            <button class="button is-danger is-fullwidth" id="to-register">Try again</button>
+        </div>
+    </div>
+</main>
+`;
+}
+
+if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
+console.log("Karakal-Auth-Init complete");
+
+function base64urlToBuffer(base64url) {
+if (typeof base64url !== "string") {
+if (base64url instanceof ArrayBuffer) return base64url;
+if (ArrayBuffer.isView(base64url)) return base64url.buffer;
+}
+let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+while (base64.length % 4) base64 += '=';
+let str = atob(base64);
+let bytes = new Uint8Array(str.length);
+for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
+return bytes.buffer;
+}
+
+function bufferToBase64Url(buffer) {
+let bytes = new Uint8Array(buffer);
+let str = "";
+for (let i = 0; i < bytes.length; ++i) str += String.fromCharCode(bytes[i]);
+let base64 = btoa(str);
+return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function registerInit(username) {
+const res = await fetch('${api}/api/v1/register-init', {
+method: 'POST',
+headers: {'Content-Type': 'application/json'},
+body: JSON.stringify({username, appId})
+});
+
+let options = await res.json();
+
+if (typeof options.challenge === "object" && options.challenge !== null && 'value' in options.challenge) {
+options.challenge = base64urlToBuffer(options.challenge.value);
+} else if (typeof options.challenge === "string") {
+options.challenge = base64urlToBuffer(options.challenge);
+}
+
+if (typeof options.user.id === "string") {
+options.user.id = base64urlToBuffer(options.user.id);
+}
+
+const credential = await navigator.credentials.create({publicKey: options});
+
+const serializedCredential = {
+id: credential.id,
+rawId: bufferToBase64Url(credential.rawId),
+type: credential.type,
+response: {
+clientDataJSON: bufferToBase64Url(credential.response.clientDataJSON),
+attestationObject: bufferToBase64Url(credential.response.attestationObject)
+},
+authenticatorAttachment: credential.authenticatorAttachment
+};
+
+const res2 = await fetch('${api}/api/v1/register-complete', {
+method: 'POST',
+headers: {'Content-Type': 'application/json', 'karakal-username': username, 'karakal-app-id': appId},
+body: JSON.stringify(serializedCredential)
+});
+
+if (res2.status === 200) {
+container.innerHTML = success();
+const toLogin = document.getElementById("to-login");
+toLogin.addEventListener('click', function (e) {
+e.preventDefault();
+showForm('login');
+});
+} else {
+container.innerHTML = error();
+const toRegister = document.getElementById("to-register");
+toRegister.addEventListener('click', function (e) {
+e.preventDefault();
+showForm('register');
+});
+}
+
+}
+
+async function loginInit(username) {
+const res = await fetch('${api}/api/v1/login-init', {
+method: 'POST',
+headers: {'Content-Type': 'application/json'},
+body: JSON.stringify({username, appId})
+});
+const options = await res.json();
+
+options.allowCredentials.forEach(cred => {
+if (typeof cred.id === "string") {
+cred.id = base64urlToBuffer(cred.id);
+}
+});
+
+if (typeof options.challenge === "string") {
+options.challenge = base64urlToBuffer(options.challenge);
+}
+
+const assertion = await navigator.credentials.get({publicKey: options});
+const resp = await fetch('${api}/api/v1/login-complete', {
+method: 'POST',
+body: JSON.stringify(assertion),
+headers: {'Content-Type': 'application/json', 'karakal-username': username, 'karakal-app-id': appId},
+});
+
+if (resp.status === 200) {
+localStorage.setItem('username', username);
+const data = await resp.json();
+const name = data.name;
+const jwt = data.jwt;
+const maxAge = data.maxAge;
+const redirect= data.redirect;
+
+document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(jwt) +
+"; max-age=" + maxAge +
+"; path=/" +
+"; SameSite=Strict" +
+"; Secure";
+
+window.location.replace(redirect);
+} else {
+container.innerHTML = error();
+}
+}
+
+function getLoginFormHTML() {
+return `
+<main>
+    <div class="auth-box">
+        <h1 class="title auth-title">Sign In</h1>
+        <p class="auth-subtitle">Please enter your email address to sign in.</p>
+        <form>
+            <div class="field">
+                <label class="label">Email Address</label>
+                <div class="control">
+                    <input class="input" id="username" name="username" type="email" placeholder="your@email.com" required autocomplete="username">
+                </div>
+            </div>
+            <button class="button is-link" id="login-init">Sign In</button>
+        </form>
+        <#if registration>
+            <div class="alt-link">
+                Don’t have an account? <a href="#" id="register-form">Register</a>
+            </div>
+        </#if>
+        <div class="alt-link" id="different-account">
+            <a href="#" id="use-different-account">Sign in with another account</a>
+        </div>
+    </div>
+</main>
+`;
+}
+
+function getRegisterFormHTML() {
+return `
+<main>
+    <div class="auth-box" id="register">
+        <h1 class="title auth-title">Register</h1>
+        <p class="auth-subtitle">Create an account to get started.</p>
+        <div class="field">
+            <label class="label">Email Address</label>
+            <div class="control">
+                <input class="input" id="username" name="username" type="email" placeholder="your@email.com" required autocomplete="username">
+            </div>
+        </div>
+        <button class="button is-link" id="register-init">Register</button>
+        </form>
+        <div class="alt-link">
+            Already have an account? <a href="#" id="login-form">Sign In</a>
+        </div>
+    </div>
+</main>
+`;
+}
+
+function showForm(formType) {
+if (formType === 'login') {
+container.innerHTML = getLoginFormHTML();
+
+const usernameInput = document.getElementById("username");
+if (usernameInput) {
+const username = localStorage.getItem("username");
+if (username !== null && username !== undefined && username !== "") {
+usernameInput.value = username;
+document.getElementById('username').disabled = true;
+} else {
+const differentAccount = document.getElementById("different-account");
+if (differentAccount) {
+differentAccount.remove();
+}
+}
+}
+
+const differentAccount = document.getElementById("use-different-account");
+if (differentAccount) {
+differentAccount.addEventListener("click", (e) => {
+e.preventDefault();
+document.getElementById('username').disabled = false;
+document.getElementById("username").value = "";
+localStorage.removeItem("username");
+const differentAccount = document.getElementById("different-account");
+if (differentAccount) {
+differentAccount.remove();
+}
+})
+}
+
+const login = document.getElementById("login-init");
+if (login) {
+login.addEventListener('click', function (e) {
+e.preventDefault();
+const username = document.getElementById("username").value;
+if (username) {
+loginInit(username);
+}
+});
+
+document.getElementById("username").addEventListener('keydown', function (event) {
+if (event.key === 'Enter') {
+event.preventDefault();
+const username = document.getElementById("username").value;
+if (username) {
+loginInit(username);
+}
+}
+});
+}
+
+const registerForm = document.getElementById("register-form");
+if (registerForm) {
+registerForm.addEventListener('click', function (e) {
+e.preventDefault();
+showForm('register');
+});
+}
+} else {
+container.innerHTML = getRegisterFormHTML();
+
+const register = document.getElementById("register-init");
+if (register) {
+register.addEventListener('click', function (e) {
+e.preventDefault();
+const username = document.getElementById("username").value;
+if (username) {
+registerInit(username);
+}
+});
+
+document.getElementById("username").addEventListener('keydown', function (event) {
+if (event.key === 'Enter') {
+event.preventDefault();
+const username = document.getElementById("username").value;
+if (username) {
+registerInit(username);
+}
+}
+});
+}
+
+const loginForm = document.getElementById("login-form");
+if (loginForm) {
+loginForm.addEventListener('click', function (e) {
+e.preventDefault();
+showForm('login');
+});
+}
+}
+}
+
+showForm('login');
+}

@@ -1,5 +1,6 @@
 package controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webauthn4j.WebAuthnManager;
 import com.webauthn4j.data.*;
 import com.webauthn4j.data.attestation.AttestationObject;
@@ -12,6 +13,7 @@ import com.webauthn4j.data.client.Origin;
 import com.webauthn4j.data.client.challenge.DefaultChallenge;
 import com.webauthn4j.server.ServerProperty;
 import constants.Const;
+import io.mangoo.core.Config;
 import io.mangoo.routing.Response;
 import io.mangoo.routing.bindings.Request;
 import io.mangoo.utils.CommonUtils;
@@ -27,6 +29,7 @@ import org.apache.fury.util.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import services.DataService;
+import utils.AppUtils;
 import utils.CacheUtils;
 import utils.JwtUtils;
 
@@ -38,12 +41,15 @@ import java.util.*;
 public class PasskeyController {
     private static final Logger LOG = LogManager.getLogger(PasskeyController.class);
     private final DataService dataService;
+    private final Config config;
+
     @Inject
-    public PasskeyController(DataService dataService) {
+    public PasskeyController(DataService dataService, Config config) {
         this.dataService = Objects.requireNonNull(dataService, "dataService can not be null");
+        this.config = Objects.requireNonNull(config, "config can not be null");
     }
 
-    public Response wellKnown(String appId) {
+    public Response jwks(String appId) {
         App app = dataService.findApp(appId);
         if (app != null) {
             try {
@@ -55,15 +61,20 @@ public class PasskeyController {
                 String n = CommonUtils.urlEncodeWithoutPaddingToBase64(publicKey.getModulus().toByteArray());
                 String e = CommonUtils.urlEncodeWithoutPaddingToBase64(publicKey.getPublicExponent().toByteArray());
 
-                List<Map<String, String>> keys = new ArrayList<>();
-                keys.add(Map.of(
-                        "kry", "RSA",
-                        "use", "sig",
-                        "alg", "RS256",
-                        "n", n,
-                        "e", e));
 
-                return Response.ok().bodyJson(keys);
+                Map<String, Object> jwk = new HashMap<>();
+                jwk.put("use", "sig");
+                jwk.put("kty", "RSA");
+                jwk.put("e", e);
+                jwk.put("n", n);
+                jwk.put("alg", "RS256");
+
+                List<Map<String, Object>> keysList = Collections.singletonList(jwk);
+
+                Map<String, Object> jwks = new HashMap<>();
+                jwks.put("keys", keysList);
+
+                return Response.ok().bodyJson(jwks);
             } catch (Exception e) {
                 LOG.error("Failed to retrieve Jwks data", e);
                 return Response.internalServerError();
@@ -81,12 +92,12 @@ public class PasskeyController {
                 String username = data.get("username");
                 User user = dataService.findUser(username, app.getAppId());
 
-                if (user == null) {
+                if (user == null && app.isRegistration()) {
                     DefaultChallenge challenge = new DefaultChallenge();
                     CacheUtils.cacheRegisterChallenge(username, challenge.getValue());
 
                     PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(
-                            new PublicKeyCredentialRpEntity(app.getDomain(), app.getDomain()),
+                            new PublicKeyCredentialRpEntity(AppUtils.getDomain(app.getUrl()), AppUtils.getDomain(app.getUrl())),
                             new PublicKeyCredentialUserEntity(CommonUtils.uuidV6().getBytes(), username, ""),
                             challenge,
                             Arrays.asList(
@@ -100,8 +111,25 @@ public class PasskeyController {
                             null
                     );
 
-                    return Response.ok().bodyJson(options);
+                    return Response.ok()
+                            .header("Access-Control-Allow-Origin", app.getUrl())
+                            .bodyJson(options);
                 }
+            }
+        }
+
+        return Response.badRequest();
+    }
+
+    public Response preflight(Request request) {
+        String origin = request.getHeader("Origin");
+        if (StringUtils.isNotBlank(origin)) {
+            App app = dataService.findAppByUrl(origin);
+            if (app != null) {
+                return Response.ok()
+                        .header("Access-Control-Allow-Origin", app.getUrl())
+                        .header("Access-Control-Allow-Methods", "POST, OPTIONS")
+                        .header("Access-Control-Allow-Headers", "Content-Type, karakal-username, karakal-app-id");
             }
         }
 
@@ -110,18 +138,20 @@ public class PasskeyController {
 
     public Response registerComplete(Request request) {
         try {
+            User user = null;
             String body = request.getBody();
             String username = request.getHeader("karakal-username");
-            User user = dataService.findUser(username);
             App app = dataService.findApp(request.getHeader("karakal-app-id"));
+            if (app != null) {
+                user = dataService.findUser(username, app.getAppId());
+            }
 
-            if (app != null && user == null && StringUtils.isNotBlank(body)) {
+            if (app != null && app.isRegistration() && user == null && StringUtils.isNotBlank(body)) {
                 WebAuthnManager webAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
 
                 byte[] challenge = CacheUtils.getRegisterChallenge(username);
                 ServerProperty serverProperty = new ServerProperty(
-                        new Origin("https://" + app.getDomain()), //FIX ME
-                        app.getDomain(),
+                        new Origin(app.getUrl()), AppUtils.getDomain(app.getUrl()),
                         new DefaultChallenge(challenge)
                 );
 
@@ -162,7 +192,7 @@ public class PasskeyController {
                     dataService.save(user);
                     CacheUtils.removeRegisterChallenge(username);
 
-                    return Response.ok();
+                    return Response.ok().header("Access-Control-Allow-Origin", app.getUrl());
                 }
             }
         } catch(Exception e) {
@@ -194,11 +224,11 @@ public class PasskeyController {
                 Map<String, Object> response = new HashMap<>();
                 response.put("challenge", CommonUtils.urlEncodeWithoutPaddingToBase64(challenge));
                 response.put("timeout", 60000);
-                response.put("rpId", app.getDomain());
+                response.put("rpId", AppUtils.getDomain(app.getUrl()));
                 response.put("allowCredentials", List.of(allowCredential));
                 response.put("userVerification", "preferred");
 
-                return Response.ok().bodyJson(response);
+                return Response.ok().header("Access-Control-Allow-Origin", app.getUrl()).bodyJson(response);
             }
         }
 
@@ -220,8 +250,7 @@ public class PasskeyController {
 
             byte[] challenge = CacheUtils.getLoginChallenge(user.getUsername());
             ServerProperty serverProperty = new ServerProperty(
-                    new Origin("https://" + app.getDomain()), //FIX ME
-                    app.getDomain(),
+                    new Origin(app.getUrl()), AppUtils.getDomain(app.getUrl()),
                     new DefaultChallenge(challenge)
             );
 
@@ -260,20 +289,12 @@ public class PasskeyController {
             var jwtData = JwtUtils.jwtData()
                     .withJwtID(CommonUtils.randomString(32))
                     .withAudience(app.getAudience())
-                    .withIssuer(app.getDomain())
+                    .withIssuer(config.getString("karakal.url"))
                     .withSubject(user.getUsername())
                     .withSigningKey(JwtUtils.fromBase64Private(app.getPrivateKey()))
                     .withTtlSeconds(Const.COOKIE_MAX_AGE);
 
             var jwt = JwtUtils.createJwt(jwtData);
-
-            Cookie cookie = new CookieImpl(Const.COOKIE_NAME)
-                    .setDomain(app.getDomain())
-                    .setExpires(new Date((new Date().getTime() + Const.COOKIE_MAX_AGE * 1000)))
-                    .setSecure(true)
-                    .setHttpOnly(true)
-                    .setValue(jwt)
-                    .setPath("/");
 
             try {
                 manager.verify(authData, params);
@@ -284,7 +305,14 @@ public class PasskeyController {
                     dataService.save(app);
                 }
 
-                return Response.ok().header("karakal-login-redirect", app.getRedirect()).cookie(cookie);
+                return Response.ok()
+                        .header("Access-Control-Allow-Origin", app.getUrl())
+                        .bodyJson(Map.of("jwt", jwt,
+                                "name", Const.COOKIE_NAME,
+                                "maxAge",
+                                Const.COOKIE_MAX_AGE * 1000,
+                                "redirect", app.getRedirect()));
+
             } catch (Exception e) {
                 LOG.error("Failed to complete authentication", e);
                 return Response.badRequest();

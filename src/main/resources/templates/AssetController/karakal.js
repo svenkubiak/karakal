@@ -22,31 +22,35 @@ if (!container) {
 
 function success() {
     return `
-<div class="card success-card">
-    <div class="header">
-        <div class="logo">✓</div>
-        <h1>Success!</h1>
-        <p class="lead">Your registration was completed successfully.</p>
+<main>
+  <div class="auth-box">
+    <div class="content has-text-centered">
+      <div class="icon is-large has-text-success" style="font-size: 3rem;">✓</div>
+      <h1 class="title is-4 has-text-success">Success!</h1>
+      <p class="subtitle is-6">Your registration was completed successfully.</p>
     </div>
-    <div class="button-container">
-        <button class="btn" id="to-login">Sign in now</button>
+    <div class="mt-4 has-text-centered"">
+      <button class="button is-primary is-fullwidth" id="to-login">Sign in now</button>
     </div>
 </div>
+</main>
 `;
 }
 
 function error() {
     return `
-<div class="card error-card">
-    <div class="header">
-        <div class="logo">✕</div>
-        <h1>Error!</h1>
-        <p class="lead">Oops... something went wrong. Please try again.</p>
+<main>
+<div class="auth-box">
+    <div class="content has-text-centered">
+      <div class="icon is-large has-text-danger" style="font-size: 3rem;">✕</div>
+      <h1 class="title is-4 has-text-danger">Error!</h1>
+      <p class="subtitle is-6">Oops... something went wrong.<br>Please try again.</p>
     </div>
-    <div class="button-container">
-        <button class="btn" id="to-register">Try again</button>
+    <div class="mt-4 has-text-centered">
+      <button class="button is-danger is-fullwidth" id="to-register">Try again</button>
     </div>
 </div>
+</main>
 `;
 }
 
@@ -157,7 +161,19 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
 
         if (resp.status === 200) {
             localStorage.setItem('username', username);
-            window.location.replace(resp.headers.get("karakal-login-redirect"));
+            const data = await resp.json();
+            const name = data.name;
+            const jwt = data.jwt;
+            const maxAge = data.maxAge;
+            const redirect= data.redirect;
+
+            document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(jwt) +
+                "; max-age=" + maxAge +
+                "; path=/" +
+                "; SameSite=Strict" +
+                "; Secure";
+
+            window.location.replace(redirect);
         } else {
             container.innerHTML = error();
         }
@@ -165,53 +181,50 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
 
     function getLoginFormHTML() {
         return `
-<main class="card" role="main">
-    <div class="header">
-        <h1>Sign In</h1>
-        <p class="lead">Please enter your email address to sign in.</p>
-    </div>
-    <div class="input-group">
-        <label for="username">Email Address</label>
-        <div class="input">
-            <input id="username" name="username" type="text" placeholder="Your email address" required autocomplete="username" />
+<main>
+  <div class="auth-box">
+    <h1 class="title auth-title">Sign In</h1>
+    <p class="auth-subtitle">Please enter your email address to sign in.</p>
+    <form>
+      <div class="field">
+        <label class="label">Email Address</label>
+        <div class="control">
+          <input class="input" id="username" name="username" type="email" placeholder="your@email.com" required autocomplete="username">
         </div>
- <div class="field has-addons" id="different-account">
-  <p class="control is-expanded has-text-centered">
-    <span class="small-text has-text-centered"><a href="#" id="use-different-account">Sign in with another account</a></span>
-  </p>
-</div>
-    </div>
-    <div class="button-container">
-        <button class="btn" id="login-init">Sign In</button>
-    </div>
+      </div>
+      <button class="button is-link" id="login-init">Sign In</button>
+    </form>
     <#if registration>
-        <div class="footer">
-            Don’t have an account? <a href="#" id="register-form">Register now</a>
-        </div>
+    <div class="alt-link">
+      Don’t have an account? <a href="#" id="register-form">Register</a>
+    </div>
     </#if>
+        <div class="alt-link" id="different-account">
+      <a href="#" id="use-different-account">Sign in with another account</a>
+    </div>
+  </div>
 </main>
 `;
     }
 
     function getRegisterFormHTML() {
         return `
-<main class="card" role="main">
-    <div class="header">
-        <h1>Registration</h1>
-        <p class="lead">Please enter an email address to register.</p>
-    </div>
-    <div class="input-group">
-        <label for="username">Email Address</label>
-        <div class="input">
-            <input id="username" name="username" type="text" placeholder="Your email address" required autocomplete="username" />
+<main>
+  <div class="auth-box" id="register">
+    <h1 class="title auth-title">Register</h1>
+    <p class="auth-subtitle">Create an account to get started.</p>
+      <div class="field">
+        <label class="label">Email Address</label>
+        <div class="control">
+          <input class="input" id="username" name="username" type="email" placeholder="your@email.com" required autocomplete="username">
         </div>
+      </div>
+      <button class="button is-link" id="register-init">Register</button>
+    </form>
+    <div class="alt-link">
+      Already have an account? <a href="#" id="login-form">Sign In</a>
     </div>
-    <div class="button-container">
-        <button class="btn" id="register-init">Register</button>
-    </div>
-    <div class="footer">
-        Already have an account? <a href="#" id="login-form">Sign in now</a>
-    </div>
+  </div>
 </main>
 `;
     }
@@ -257,6 +270,16 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                         loginInit(username);
                     }
                 });
+
+                document.getElementById("username").addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        const username = document.getElementById("username").value;
+                        if (username) {
+                            loginInit(username);
+                        }
+                    }
+                });
             }
 
             const registerForm = document.getElementById("register-form");
@@ -276,6 +299,16 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                     const username = document.getElementById("username").value;
                     if (username) {
                         registerInit(username);
+                    }
+                });
+
+                document.getElementById("username").addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        const username = document.getElementById("username").value;
+                        if (username) {
+                            registerInit(username);
+                        }
                     }
                 });
             }

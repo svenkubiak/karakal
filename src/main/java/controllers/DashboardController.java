@@ -15,14 +15,15 @@ import models.App;
 import org.apache.commons.lang3.StringUtils;
 import services.DataService;
 
+import java.net.URI;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import constants.Const;
+import utils.AppUtils;
 
 public class DashboardController {
     private static final Pattern NAME_PATTERN = Pattern.compile("^[A-Za-z0-9_\\- ]{3,64}$");
-    private static final Pattern DOMAIN_PATTERN = Pattern.compile("^([A-Za-z0-9-]{1,63}\\.)+[A-Za-z]{2,6}$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^$|^(@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+)(, @[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+)*$");
     private final DataService dataService;
     private final Config config;
@@ -45,7 +46,7 @@ public class DashboardController {
         Cookie cookie = new CookieImpl(Const.COOKIE_NAME)
                 .setPath("/")
                 .setSecure(true)
-                .setDomain(dashboard.getDomain())
+                .setDomain(AppUtils.getDomain(dashboard.getUrl()))
                 .setValue("")
                 .setMaxAge(-1)
                 .setDiscard(true)
@@ -105,8 +106,8 @@ public class DashboardController {
         }
         form.expectValue("redirect", "Redirect must be a valid URL.");
         form.expectUrl("redirect", "Redirect must be a valid URL.");
-        form.expectValue("domain", "Domain must be a valid domain without protocol.");
-        form.expectRegex("domain", DOMAIN_PATTERN, "Domain must be a valid domain without protocol.");
+        form.expectValue("url", "URL must be a valid URL.");
+        form.expectUrl("url", "URL must be a valid URL.");
         form.expectRegex("email", EMAIL_PATTERN, "E-mails domains must be comma seperated value of domains with user");
         form.expectValue("ttl", "Ttl muss be a valid integer between 60 and 900 seconds.");
         form.expectNumeric("ttl", "Ttl muss be a valid integer between 60 and 900 seconds.");
@@ -119,7 +120,7 @@ public class DashboardController {
 
             app.setName(form.get("name"));
             app.setRegistration(form.getBoolean("registration").orElse(false));
-            app.setDomain(form.get("domain"));
+            app.setUrl(form.get("url"));
             app.setRedirect(form.get("redirect"));
             app.setAudience(form.get("audience"));
             app.setEmail(form.get("email"));
