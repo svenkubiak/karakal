@@ -8,23 +8,29 @@
     <title>Karakal Dashboard</title>
     <link rel="stylesheet" href="/assets/css/bulma.min.css">
     <link rel="stylesheet" href="/assets/css/all.min.css">
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
   </head>
   <body>
-  <nav class="navbar is-info" role="navigation" aria-label="main navigation">
+  <nav class="navbar is-link" role="navigation" aria-label="main navigation">
       <div class="navbar-brand">
           <a class="navbar-item" href="/dashboard">
               <svg width="640" height="160" viewBox="0 0 640 160" xmlns="http://www.w3.org/2000/svg">
-                  <text x="50" y="125" font-size="110" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#222">KARAKAL</text>
+                  <text x="50" y="125" font-size="110" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#fff">KARAKAL</text>
               </svg>
           </a>
-          <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+          <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasic">
               <span aria-hidden="true"></span>
               <span aria-hidden="true"></span>
               <span aria-hidden="true"></span>
               <span aria-hidden="true"></span>
           </a>
       </div>
-      <div id="navbarBasicExample" class="navbar-menu">
+      <div id="navbarBasic" class="navbar-menu">
+          <div class="navbar-start">
+              <a href="/dashboard" class="navbar-item">
+                  Applications
+              </a>
+          </div>
           <div class="navbar-end">
               <div class="navbar-item">
                   <div class="buttons">
@@ -36,7 +42,7 @@
           </div>
       </div>
   </nav>
-	<#nested>
+  <#nested>
   </body>
   <script src="/assets/js/dashboard.js"></script>
 </html>

@@ -2,25 +2,16 @@
 <@layout.myLayout "Layout">
 
 <div class="container">
-    <div class="columns is-centered mt-6">
-        <div class="column is-half">
-            <div class="field has-addons is-justify-content-center">
-                <div class="control is-expanded">
-                    <input class="input" type="text" placeholder="Search..." />
-                </div>
-                <div class="control">
-                    <a href="/dashboard/app" class="button is-primary" title="Add Card">
-            <span class="icon">
-              <i class="fas fa-plus"></i>
-            </span>
-                        <span>Add</span>
-                    </a>
+    <div class="columns is-centered is-multiline">
+        <div class="column is-one-quarter">
+            <a href="/dashboard/app">
+            <div class="card">
+                <div class="card-content add-card">
+                    +
                 </div>
             </div>
+            </a>
         </div>
-    </div>
-
-    <div class="columns is-centered is-multiline">
         <#list apps as app>
             <div class="column is-one-quarter">
                 <div class="card">

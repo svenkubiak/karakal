@@ -1,9 +1,9 @@
 <#import "../layout.ftl" as layout>
 <@layout.myLayout "Layout">
 <div class="container">
-    <div class="columns mt-6">
+    <div class="columns">
         <div class="column is-half">
-            <h1 class="title">Add a new Application</h1>
+            <h1 class="title">Application details</h1>
         </div>
     </div>
     <div class="columns is-centered is-multiline">
