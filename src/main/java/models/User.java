@@ -1,6 +1,7 @@
 package models;
 
 import io.mangoo.annotations.Collection;
+import io.mangoo.annotations.Indexed;
 import io.mangoo.persistence.Entity;
 import io.mangoo.utils.Arguments;
 
@@ -12,7 +13,10 @@ public class User extends Entity {
     private String username;
     private String attestedCredentialData;
     private String coseKey;
+
+    @Indexed(unique = true)
     private byte[] credentialId;
+
     private byte[] publicKeyCose;
     private long signCount;
     private LocalDateTime createdAt;

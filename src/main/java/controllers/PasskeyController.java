@@ -3,13 +3,11 @@ package controllers;
 import com.webauthn4j.WebAuthnManager;
 import com.webauthn4j.data.*;
 import com.webauthn4j.data.attestation.AttestationObject;
-import com.webauthn4j.data.attestation.authenticator.AAGUID;
-import com.webauthn4j.data.attestation.authenticator.AttestedCredentialData;
-import com.webauthn4j.data.attestation.authenticator.Curve;
-import com.webauthn4j.data.attestation.authenticator.EC2COSEKey;
+import com.webauthn4j.data.attestation.authenticator.*;
 import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
 import com.webauthn4j.data.client.Origin;
 import com.webauthn4j.data.client.challenge.DefaultChallenge;
+import com.webauthn4j.data.extension.authenticator.AuthenticationExtensionAuthenticatorOutput;
 import com.webauthn4j.server.ServerProperty;
 import constants.Const;
 import io.mangoo.core.Config;
@@ -92,18 +90,23 @@ public class PasskeyController {
                     DefaultChallenge challenge = new DefaultChallenge();
                     CacheUtils.cacheRegisterChallenge(username, challenge.getValue());
 
+                    AuthenticatorSelectionCriteria authenticatorSelectionCriteria =
+                            new AuthenticatorSelectionCriteria(
+                                    AuthenticatorAttachment.CROSS_PLATFORM,
+                                    false,
+                                    ResidentKeyRequirement.PREFERRED,
+                                    UserVerificationRequirement.REQUIRED
+                            );
+
                     PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(
                             new PublicKeyCredentialRpEntity(AppUtils.getDomain(app.getUrl()), AppUtils.getDomain(app.getUrl())),
                             new PublicKeyCredentialUserEntity(CommonUtils.uuidV6().getBytes(), username, ""),
                             challenge,
-                            Arrays.asList(
-                                    new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256),
-                                    new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.RS256)
-                            ),
+                            List.of(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256)),
                             60000L,
                             Collections.emptyList(),
-                            null,
-                            AttestationConveyancePreference.DIRECT,
+                            authenticatorSelectionCriteria,
+                            AttestationConveyancePreference.NONE,
                             null
                     );
 
@@ -125,6 +128,7 @@ public class PasskeyController {
             App app = dataService.findAppByUrl(origin);
             if (app != null) {
                 return Response.ok()
+                        .header("Vary", "Origin")
                         .header("Access-Control-Allow-Origin", app.getUrl())
                         .header("Access-Control-Allow-Methods", "POST, OPTIONS")
                         .header("Access-Control-Allow-Headers", "Content-Type, karakal-username, karakal-app-id");
@@ -148,6 +152,10 @@ public class PasskeyController {
                 WebAuthnManager webAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
 
                 byte[] challenge = CacheUtils.getRegisterChallenge(username);
+                if (challenge == null) {
+                    return Response.badRequest();
+                }
+
                 ServerProperty serverProperty = new ServerProperty(
                         new Origin(app.getUrl()), AppUtils.getDomain(app.getUrl()),
                         new DefaultChallenge(challenge)
@@ -178,7 +186,6 @@ public class PasskeyController {
                             .getAuthenticatorData()
                             .getSignCount();
 
-                    //CHECK THIS!
                     user = new User(username);
                     user.setAppId(app.getAppId());
                     user.setCredentialId(credentialId);
@@ -226,7 +233,7 @@ public class PasskeyController {
                 response.put("timeout", 60000);
                 response.put("rpId", AppUtils.getDomain(app.getUrl()));
                 response.put("allowCredentials", List.of(allowCredential));
-                response.put("userVerification", "preferred");
+                response.put("userVerification", "required");
 
                 return Response.ok().header("Access-Control-Allow-Origin", app.getUrl()).bodyJson(response);
             } else {
@@ -251,6 +258,10 @@ public class PasskeyController {
             AuthenticationData authData = manager.parseAuthenticationResponseJSON(body);
 
             byte[] challenge = CacheUtils.getLoginChallenge(user.getUsername());
+            if (challenge == null) {
+                return Response.badRequest();
+            }
+
             ServerProperty serverProperty = new ServerProperty(
                     new Origin(app.getUrl()), AppUtils.getDomain(app.getUrl()),
                     new DefaultChallenge(challenge)
@@ -281,7 +292,7 @@ public class PasskeyController {
                     serverProperty,
                     credential,
                     List.of(user.getCredentialId()),
-                    false
+                    true
             );
 
             var jwtData = JwtUtils.jwtData()
@@ -301,6 +312,12 @@ public class PasskeyController {
                 if (app.getName().equalsIgnoreCase("dashboard") && app.isRegistration()) {
                     app.setRegistration(false);
                     dataService.save(app);
+                }
+
+                AuthenticatorData<AuthenticationExtensionAuthenticatorOutput> authenticatorData = authData.getAuthenticatorData();
+                if (authenticatorData != null) {
+                    user.setSignCount(authenticatorData.getSignCount());
+                    dataService.save(user);
                 }
 
                 return Response.ok()
