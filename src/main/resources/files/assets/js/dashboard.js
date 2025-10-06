@@ -20,24 +20,6 @@ document.querySelectorAll('.deleteBtn').forEach(function(button){
     });
 });
 
-const modal = document.getElementById('exampleModal');
-const modalBody = document.getElementById('modalBody');
-
-modal.addEventListener('click', function(e) {
-    if (
-        e.target.classList.contains('delete') ||
-        e.target.classList.contains('modal-background') ||
-        e.target.classList.contains('close-modal-btn')
-    ) {
-        closeModal();
-    }
-});
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-
-function closeModal() {
-    modal.classList.remove('is-active');
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
 
