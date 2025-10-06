@@ -8,27 +8,19 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import constants.Const;
 import io.mangoo.cache.Cache;
-import io.mangoo.core.Config;
 import io.mangoo.interfaces.filters.PerRequestFilter;
 import io.mangoo.routing.Response;
 import io.mangoo.routing.bindings.Request;
-import io.mangoo.utils.CommonUtils;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import models.App;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import services.DataService;
 import utils.AppUtils;
 
 import java.net.URI;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Date;
 import java.util.Objects;
 
