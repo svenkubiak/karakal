@@ -36,7 +36,7 @@ public class DataService {
         if (dashboard == null) {
             String karakalUrl = config.getString("karakal.url");
             dashboard = new App("dashboard");
-            dashboard.setAudience(karakalUrl);
+            dashboard.setAudience(AppUtils.getDomain(karakalUrl));
             dashboard.setRedirect(karakalUrl + "/dashboard");
             dashboard.setUrl(karakalUrl);
             datastore.save(dashboard);

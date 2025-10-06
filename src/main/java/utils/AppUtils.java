@@ -47,7 +47,7 @@ public final class AppUtils {
     public static boolean matchesDomain(String email, List<String> domains) {
         Arguments.requireNonBlank(email, "email can not be null or blank");
         Objects.requireNonNull(domains, "domains can not be null");
-        
+
         for (String domain : domains) {
             if (email.trim().endsWith(domain)) {
                 return true;
