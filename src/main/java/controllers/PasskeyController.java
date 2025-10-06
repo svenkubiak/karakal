@@ -86,7 +86,7 @@ public class PasskeyController {
                 String username = data.get("username");
                 User user = dataService.findUser(username, app.getAppId());
 
-                if (user == null && app.isRegistration()) {
+                if (AppUtils.isAllowedDomain(app, username) && user == null && app.isRegistration()) {
                     DefaultChallenge challenge = new DefaultChallenge();
                     CacheUtils.cacheRegisterChallenge(username, challenge.getValue());
 
@@ -197,7 +197,8 @@ public class PasskeyController {
                     dataService.save(user);
                     CacheUtils.removeRegisterChallenge(username);
 
-                    return Response.ok().header("Access-Control-Allow-Origin", app.getUrl());
+                    return Response.ok()
+                            .header("Access-Control-Allow-Origin", app.getUrl());
                 }
             } else {
                 return Response.notFound();
@@ -215,12 +216,12 @@ public class PasskeyController {
             String username = data.get("username");
 
             App app = dataService.findApp(data.get("appId"));
-            User user = null;
-            if (app != null) {
-                user = dataService.findUser(username, app.getAppId());
+            if (app == null) {
+                return Response.notFound();
             }
 
-            if (user != null) {
+            User user = dataService.findUser(username, app.getAppId());
+            if (AppUtils.isAllowedDomain(app, username) && user != null) {
                 Map<String, Object> allowCredential = new HashMap<>();
                 allowCredential.put("type", "public-key");
                 allowCredential.put("id", CommonUtils.urlEncodeWithoutPaddingToBase64(user.getCredentialId()));
@@ -235,7 +236,9 @@ public class PasskeyController {
                 response.put("allowCredentials", List.of(allowCredential));
                 response.put("userVerification", "required");
 
-                return Response.ok().header("Access-Control-Allow-Origin", app.getUrl()).bodyJson(response);
+                return Response.ok()
+                        .header("Access-Control-Allow-Origin", app.getUrl())
+                        .bodyJson(response);
             } else {
                 Response.notFound();
             }
