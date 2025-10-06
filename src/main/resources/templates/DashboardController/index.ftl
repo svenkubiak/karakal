@@ -20,6 +20,7 @@
                     <div class="card-content">
                         <div class="tags">
                             <span class="tag is-info">${app.url}</span>
+                            <br>
                             <#if app.registration>
                                 <span class="tag is-info">Registration enabled</span>
                             <#else>
