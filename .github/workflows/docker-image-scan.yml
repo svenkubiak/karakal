@@ -1,4 +1,4 @@
-name: Scan Docker Image
+name: Build, Dockerize, Scan
 
 on:
   push:
@@ -6,13 +6,22 @@ on:
   pull_request:
 
 jobs:
-  build-and-scan:
+  build-docker-scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build Docker Image
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '25'
+
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+
+      - name: Build Docker image
         run: docker build -t my-app:latest .
 
       - name: Trivy vulnerability scan
@@ -21,7 +30,7 @@ jobs:
           image-ref: my-app:latest
           format: table
           output: trivy-report.txt
-          exit-code: '1'            # Fail if any vulnerability is found
+          exit-code: '1'
           ignore-unfixed: false
           severity: CRITICAL,HIGH
 
@@ -30,4 +39,3 @@ jobs:
         with:
           name: trivy-report
           path: trivy-report.txt
-
