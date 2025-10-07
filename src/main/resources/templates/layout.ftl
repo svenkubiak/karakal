@@ -8,7 +8,7 @@
     <title>Karakal Dashboard</title>
     <link rel="stylesheet" href="/assets/css/bulma.min.css">
     <link rel="stylesheet" href="/assets/css/all.min.css">
-    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link rel="stylesheet" href="/assets/css/dashboard.min.css">
   </head>
   <body>
   <nav class="navbar is-link" role="navigation" aria-label="main navigation">
@@ -44,6 +44,6 @@
   </nav>
   <#nested>
   </body>
-  <script src="/assets/js/dashboard.js"></script>
+  <script src="/assets/js/dashboard.min.js"></script>
 </html>
 </#macro>
