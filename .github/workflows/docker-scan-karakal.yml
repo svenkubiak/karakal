@@ -2,11 +2,8 @@ name: Build, Dockerize, Scan
 
 on:
   push:
-    branches:
-      - 'feature/**'
+    branches: [main]
   pull_request:
-    branches:
-      - 'feature/**'
 
 jobs:
   build-docker-scan:
