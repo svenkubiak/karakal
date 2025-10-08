@@ -2,8 +2,11 @@ name: Build, Dockerize, Scan
 
 on:
   push:
-    branches: [main]
+    branches:
+      - 'feature/**'
   pull_request:
+    branches:
+      - 'feature/**'
 
 jobs:
   build-docker-scan:
@@ -22,20 +25,14 @@ jobs:
         run: mvn clean package -DskipTests
 
       - name: Build Docker image
-        run: docker build -t my-app:latest .
+        run: docker build -t karakal-scan:latest .
 
       - name: Trivy vulnerability scan
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          image-ref: my-app:latest
+          image-ref: karakal-scan:latest
           format: table
-          output: trivy-report.txt
           exit-code: '1'
           ignore-unfixed: false
-          severity: CRITICAL,HIGH
+          severity: LOW,MEDIUM,HIGH,CRITICAL
 
-      - name: Upload Trivy Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: trivy-report
-          path: trivy-report.txt
