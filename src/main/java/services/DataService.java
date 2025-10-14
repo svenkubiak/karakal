@@ -2,6 +2,7 @@ package services;
 
 import com.google.common.base.Preconditions;
 import com.mongodb.client.model.*;
+import constants.Const;
 import io.mangoo.core.Config;
 import io.mangoo.persistence.interfaces.Datastore;
 import io.mangoo.utils.Arguments;
@@ -32,10 +33,10 @@ public class DataService {
     }
 
     public void init() {
-        App dashboard = datastore.find(App.class, eq("name", "dashboard"));
+        App dashboard = datastore.find(App.class, eq("name", Const.DASHBOARD));
         if (dashboard == null) {
             String karakalUrl = config.getString("karakal.url");
-            dashboard = new App("dashboard");
+            dashboard = new App(Const.DASHBOARD);
             dashboard.setAudience(AppUtils.getDomain(karakalUrl));
             dashboard.setRedirect(karakalUrl + "/dashboard");
             dashboard.setUrl(karakalUrl);
@@ -44,7 +45,7 @@ public class DataService {
     }
 
     public App findDashboard() {
-        return datastore.find(App.class, eq("name", "dashboard"));
+        return datastore.find(App.class, eq("name", Const.DASHBOARD));
     }
 
     public void indexify() {
@@ -60,7 +61,7 @@ public class DataService {
     }
 
     public List<App> findApps() {
-        return datastore.findAll(App.class, not(eq("name", "dashboard")), Sorts.ascending("name"));
+        return datastore.findAll(App.class, not(eq("name", Const.DASHBOARD)), Sorts.ascending("name"));
     }
 
     public void save(Object object) {
@@ -72,13 +73,16 @@ public class DataService {
         Arguments.requireNonBlank(appId, "appId can not be null");
 
         if (APP_ID_PATTERN.matcher(appId).matches()) {
-            return datastore.find(App.class, eq("appId", appId));
+            return datastore.find(App.class,
+                    and(
+                            eq("appId", appId),
+                            not(eq("name", Const.DASHBOARD))));
         }
 
         return null;
     }
 
-    public void delete(String appId) {
+    public void deleteApp(String appId) {
         Arguments.requireNonBlank(appId, "appId can not be null");
 
         if (APP_ID_PATTERN.matcher(appId).matches()) {
@@ -103,7 +107,9 @@ public class DataService {
 
         if (USERNAME_PATTERN.matcher(username).matches() && APP_ID_PATTERN.matcher(appId).matches()) {
             return datastore.find(User.class,
-                    and(eq("username", username), eq("appId", appId)));
+                    and(
+                            eq("username", username),
+                            eq("appId", appId)));
         }
 
         return null;
@@ -127,6 +133,9 @@ public class DataService {
         Arguments.requireNonBlank(url, "url can not be null or blank");
         Preconditions.checkArgument(AppUtils.isValidUrl(url), "url is not a valid URL");
 
-        return datastore.find(App.class, eq("url", url));
+        return datastore.find(App.class,
+                and(
+                        eq("url", url),
+                        not(eq("name", Const.DASHBOARD))));
     }
 }

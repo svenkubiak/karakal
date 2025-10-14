@@ -312,7 +312,7 @@ public class PasskeyController {
                 manager.verify(authData, params);
                 CacheUtils.removeLoginChallenge(user.getUsername());
 
-                if (app.getName().equalsIgnoreCase("dashboard") && app.isRegistration()) {
+                if (app.getName().equalsIgnoreCase(Const.DASHBOARD) && app.isRegistration()) {
                     app.setRegistration(false);
                     dataService.save(app);
                 }

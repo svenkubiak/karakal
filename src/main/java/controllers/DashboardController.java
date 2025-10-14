@@ -86,7 +86,7 @@ public class DashboardController {
     @FilterWith(PasskeyFilter.class)
     public Response delete(String appId) {
         dataService.removeUsersFromApp(appId);
-        dataService.delete(appId);
+        dataService.deleteApp(appId);
         return Response.ok();
     }
 
