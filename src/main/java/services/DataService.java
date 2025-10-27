@@ -9,8 +9,6 @@ import io.mangoo.utils.Arguments;
 import jakarta.inject.Inject;
 import models.App;
 import models.User;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import utils.AppUtils;
 
 import java.util.List;
@@ -20,9 +18,6 @@ import java.util.regex.Pattern;
 import static com.mongodb.client.model.Filters.*;
 
 public class DataService {
-    private static final Logger LOG = LogManager.getLogger(DataService.class);
-    private static final Pattern APP_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9-_]{1,100}$");
-    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     private final Datastore datastore;
     private final Config config;
 
@@ -72,29 +67,23 @@ public class DataService {
     public App findApp(String appId) {
         Arguments.requireNonBlank(appId, "appId can not be null");
 
-        if (APP_ID_PATTERN.matcher(appId).matches()) {
-            return datastore.find(App.class,
-                    and(
-                            eq("appId", appId),
-                            not(eq("name", Const.DASHBOARD))));
-        }
-
-        return null;
+        return datastore.find(App.class,
+                and(
+                        eq("appId", appId),
+                        not(eq("name", Const.DASHBOARD))));
     }
 
     public void deleteApp(String appId) {
         Arguments.requireNonBlank(appId, "appId can not be null");
 
-        if (APP_ID_PATTERN.matcher(appId).matches()) {
-            App app = findApp(appId);
-            datastore.delete(app);
-        }
+        App app = findApp(appId);
+        datastore.delete(app);
     }
 
     public User findUser(String username) {
         Arguments.requireNonBlank(username, "username can not be null");
 
-        if (USERNAME_PATTERN.matcher(username).matches()) {
+        if (Const.USERNAME_PATTERN.matcher(username).matches()) {
             return datastore.find(User.class, eq("username", username));
         }
 
@@ -105,7 +94,7 @@ public class DataService {
         Arguments.requireNonBlank(username, "username can not be null");
         Arguments.requireNonBlank(appId, "appId can not be null");
 
-        if (USERNAME_PATTERN.matcher(username).matches() && APP_ID_PATTERN.matcher(appId).matches()) {
+        if (Const.USERNAME_PATTERN.matcher(username).matches()) {
             return datastore.find(User.class,
                     and(
                             eq("username", username),
@@ -125,6 +114,8 @@ public class DataService {
     }
 
     public boolean appExists(String name) {
+        Arguments.requireNonBlank(name, "name can not be null");
+
         return datastore.find(App.class,
                 regex("name", Pattern.compile(name, Pattern.CASE_INSENSITIVE))) != null;
     }

@@ -3,11 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>karakal</artifactId>
 	<groupId>de.svenkubiak</groupId>
-	<version>1.0.0-Beta2-SNAPSHOT</version>
+	<version>1.0.0-Beta3-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<url>https://github.com/svenkubiak/karakal</url>
 	<properties>
-		<mangooio.version>10.0.0-Beta1</mangooio.version>
+		<mangooio.version>10.0.0-Beta5</mangooio.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jdk.version>25</jdk.version>
 		<maven.compiler.optimze>true</maven.compiler.optimze>

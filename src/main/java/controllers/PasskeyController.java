@@ -16,6 +16,10 @@ import io.mangoo.routing.bindings.Request;
 import io.mangoo.utils.CommonUtils;
 import io.mangoo.utils.JsonUtils;
 import jakarta.inject.Inject;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import models.App;
 import models.Credential;
 import models.User;
@@ -43,7 +47,7 @@ public class PasskeyController {
         this.config = Objects.requireNonNull(config, "config can not be null");
     }
 
-    public Response jwks(String appId) {
+    public Response jwks(@NotBlank @Pattern(regexp = Const.APP_ID_PATTERN) String appId) {
         App app = dataService.findApp(appId);
         if (app != null) {
             try {
@@ -78,44 +82,40 @@ public class PasskeyController {
         return Response.notFound();
     }
 
-    public Response registerInit(Map<String, String> data) {
-        if (data != null && !data.isEmpty()) {
-            App app = dataService.findApp(data.get("appId"));
+    public Response registerInit(@NotNull @NotEmpty Map<String, String> data) {
+        App app = dataService.findApp(data.get("appId"));
 
-            if (app != null && app.isRegistration()) {
-                String username = data.get("username");
-                User user = dataService.findUser(username, app.getAppId());
+        if (app != null && app.isRegistration()) {
+            String username = data.get("username");
+            User user = dataService.findUser(username, app.getAppId());
 
-                if (AppUtils.isAllowedDomain(app, username) && user == null && app.isRegistration()) {
-                    DefaultChallenge challenge = new DefaultChallenge();
-                    CacheUtils.cacheRegisterChallenge(username, challenge.getValue());
+            if (AppUtils.isAllowedDomain(app, username) && user == null && app.isRegistration()) {
+                DefaultChallenge challenge = new DefaultChallenge();
+                CacheUtils.cacheRegisterChallenge(username, challenge.getValue());
 
-                    AuthenticatorSelectionCriteria authenticatorSelectionCriteria =
-                            new AuthenticatorSelectionCriteria(
-                                    AuthenticatorAttachment.CROSS_PLATFORM,
-                                    false,
-                                    ResidentKeyRequirement.PREFERRED,
-                                    UserVerificationRequirement.REQUIRED
-                            );
+                AuthenticatorSelectionCriteria authenticatorSelectionCriteria =
+                        new AuthenticatorSelectionCriteria(
+                                AuthenticatorAttachment.CROSS_PLATFORM,
+                                false,
+                                ResidentKeyRequirement.PREFERRED,
+                                UserVerificationRequirement.REQUIRED
+                        );
 
-                    PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(
-                            new PublicKeyCredentialRpEntity(AppUtils.getDomain(app.getUrl()), AppUtils.getDomain(app.getUrl())),
-                            new PublicKeyCredentialUserEntity(CommonUtils.uuidV6().getBytes(), username, ""),
-                            challenge,
-                            List.of(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256)),
-                            60000L,
-                            Collections.emptyList(),
-                            authenticatorSelectionCriteria,
-                            AttestationConveyancePreference.NONE,
-                            null
-                    );
+                PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(
+                        new PublicKeyCredentialRpEntity(AppUtils.getDomain(app.getUrl()), AppUtils.getDomain(app.getUrl())),
+                        new PublicKeyCredentialUserEntity(CommonUtils.uuidV6().getBytes(), username, ""),
+                        challenge,
+                        List.of(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256)),
+                        60000L,
+                        Collections.emptyList(),
+                        authenticatorSelectionCriteria,
+                        AttestationConveyancePreference.NONE,
+                        null
+                );
 
-                    return Response.ok()
-                            .header("Access-Control-Allow-Origin", app.getUrl())
-                            .bodyJson(options);
-                }
-            } else {
-                return Response.notFound();
+                return Response.ok()
+                        .header("Access-Control-Allow-Origin", app.getUrl())
+                        .bodyJson(options);
             }
         }
 
@@ -211,37 +211,33 @@ public class PasskeyController {
         return Response.badRequest();
     }
 
-    public Response loginInit(Map<String, String> data) {
-        if (data != null && !data.isEmpty()) {
-            String username = data.get("username");
+    public Response loginInit(@NotNull @NotEmpty Map<String, String> data) {
+        String username = data.get("username");
 
-            App app = dataService.findApp(data.get("appId"));
-            if (app == null) {
-                return Response.notFound();
-            }
+        App app = dataService.findApp(data.get("appId"));
+        if (app == null) {
+            return Response.notFound();
+        }
 
-            User user = dataService.findUser(username, app.getAppId());
-            if (AppUtils.isAllowedDomain(app, username) && user != null) {
-                Map<String, Object> allowCredential = new HashMap<>();
-                allowCredential.put("type", "public-key");
-                allowCredential.put("id", CommonUtils.urlEncodeWithoutPaddingToBase64(user.getCredentialId()));
+        User user = dataService.findUser(username, app.getAppId());
+        if (AppUtils.isAllowedDomain(app, username) && user != null) {
+            Map<String, Object> allowCredential = new HashMap<>();
+            allowCredential.put("type", "public-key");
+            allowCredential.put("id", CommonUtils.urlEncodeWithoutPaddingToBase64(user.getCredentialId()));
 
-                byte [] challenge =  new DefaultChallenge().getValue();
-                CacheUtils.cacheLoginChallenge(username, challenge);
+            byte [] challenge =  new DefaultChallenge().getValue();
+            CacheUtils.cacheLoginChallenge(username, challenge);
 
-                Map<String, Object> response = new HashMap<>();
-                response.put("challenge", CommonUtils.urlEncodeWithoutPaddingToBase64(challenge));
-                response.put("timeout", 60000);
-                response.put("rpId", AppUtils.getDomain(app.getUrl()));
-                response.put("allowCredentials", List.of(allowCredential));
-                response.put("userVerification", "required");
+            Map<String, Object> response = new HashMap<>();
+            response.put("challenge", CommonUtils.urlEncodeWithoutPaddingToBase64(challenge));
+            response.put("timeout", 60000);
+            response.put("rpId", AppUtils.getDomain(app.getUrl()));
+            response.put("allowCredentials", List.of(allowCredential));
+            response.put("userVerification", "required");
 
-                return Response.ok()
-                        .header("Access-Control-Allow-Origin", app.getUrl())
-                        .bodyJson(response);
-            } else {
-                Response.notFound();
-            }
+            return Response.ok()
+                    .header("Access-Control-Allow-Origin", app.getUrl())
+                    .bodyJson(response);
         }
 
         return Response.badRequest();

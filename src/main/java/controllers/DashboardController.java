@@ -1,6 +1,5 @@
 package controllers;
 
-import com.google.re2j.Pattern;
 import constants.Const;
 import filters.PasskeyFilter;
 import io.mangoo.annotations.FilterWith;
@@ -12,6 +11,8 @@ import io.mangoo.routing.bindings.Session;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.server.handlers.CookieImpl;
 import jakarta.inject.Inject;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import models.App;
 import org.apache.commons.lang3.StringUtils;
 import services.DataService;
@@ -22,8 +23,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class DashboardController {
-    private static final Pattern NAME_PATTERN = Pattern.compile("^[A-Za-z0-9_\\- ]{3,64}$");
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^$|^(@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+)(, @[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+)*$");
+
     private final DataService dataService;
     private final Config config;
 
@@ -63,28 +63,30 @@ public class DashboardController {
     }
 
     @FilterWith(PasskeyFilter.class)
-    public Response app(String appId) {
-        App app = null;
-        if (StringUtils.isNotBlank(appId)) {
-            app = dataService.findApp(appId);
+    public Response app(@NotBlank @Pattern(regexp = Const.APP_ID_PATTERN) String appId) {
+        App app = dataService.findApp(appId);
+        if  (app != null) {
+            return Response.ok().render("app", app);
         }
 
-        return Response.ok().render("app", app);
+        return Response.notFound().bodyDefault();
     }
 
     @FilterWith(PasskeyFilter.class)
-    public Response info(String appId) {
-        App app = null;
-        if (StringUtils.isNotBlank(appId)) {
-            app = dataService.findApp(appId);
+    public Response info(@NotBlank @Pattern(regexp = Const.APP_ID_PATTERN) String appId) {
+        App app = dataService.findApp(appId);
+        if (app != null) {
+            return Response.ok()
+                    .render("app", app)
+                    .render("url", config.getString("karakal.url"));
         }
 
-        return Response.ok().render("app", app).render("url", config.getString("karakal.url"));
+        return Response.notFound().bodyDefault();
     }
 
 
     @FilterWith(PasskeyFilter.class)
-    public Response delete(String appId) {
+    public Response delete(@NotBlank @Pattern(regexp = Const.APP_ID_PATTERN) String appId) {
         dataService.removeUsersFromApp(appId);
         dataService.deleteApp(appId);
         return Response.ok();
@@ -99,7 +101,7 @@ public class DashboardController {
         }
 
         form.expectValue("name", "Name must be a valid value containing min. 3 and up to 64 alphanumeric characters.");
-        form.expectRegex("name", NAME_PATTERN, "Name must be a valid value containing min. 3 and up to 64 alphanumeric characters.");
+        form.expectRegex("name", Const.NAME_PATTERN, "Name must be a valid value containing min. 3 and up to 64 alphanumeric characters.");
         if (app == null || !form.get("name").equalsIgnoreCase(app.getName())) {
             form.expectFalse("name", dataService.appExists(form.get("name")), "An application with the same name already exists.");
         }
@@ -107,7 +109,7 @@ public class DashboardController {
         form.expectUrl("redirect", "Redirect must be a valid URL.");
         form.expectValue("url", "URL must be a valid URL.");
         form.expectUrl("url", "URL must be a valid URL.");
-        form.expectRegex("email", EMAIL_PATTERN, "E-mails domains must be comma seperated value of domains with user");
+        form.expectRegex("email", Const.EMAIL_PATTERN, "E-mails domains must be comma seperated value of domains with user");
         form.expectValue("ttl", "Ttl muss be a valid integer between 60 and 900 seconds.");
         form.expectNumeric("ttl", "Ttl muss be a valid integer between 60 and 900 seconds.");
         form.expectRangeValue("ttl", 60, 900, "Ttl muss be a valid integer between 60 and 900 seconds.");
