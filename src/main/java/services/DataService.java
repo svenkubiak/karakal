@@ -28,7 +28,7 @@ public class DataService {
     }
 
     public void init() {
-        App dashboard = datastore.find(App.class, eq("name", Const.DASHBOARD));
+        App dashboard = findDashboard();
         if (dashboard == null) {
             String karakalUrl = config.getString("karakal.url");
             dashboard = new App(Const.DASHBOARD);
@@ -78,16 +78,6 @@ public class DataService {
 
         App app = findApp(appId);
         datastore.delete(app);
-    }
-
-    public User findUser(String username) {
-        Arguments.requireNonBlank(username, "username can not be null");
-
-        if (Const.USERNAME_PATTERN.matcher(username).matches()) {
-            return datastore.find(User.class, eq("username", username));
-        }
-
-        return null;
     }
 
     public User findUser(String username, String appId) {
