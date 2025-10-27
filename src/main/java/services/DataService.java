@@ -5,7 +5,7 @@ import com.mongodb.client.model.*;
 import constants.Const;
 import io.mangoo.core.Config;
 import io.mangoo.persistence.interfaces.Datastore;
-import io.mangoo.utils.Arguments;
+import io.mangoo.utils.Argument;
 import jakarta.inject.Inject;
 import models.App;
 import models.User;
@@ -56,7 +56,8 @@ public class DataService {
     }
 
     public List<App> findApps() {
-        return datastore.findAll(App.class, not(eq("name", Const.DASHBOARD)), Sorts.ascending("name"));
+        return datastore.findAll(App.class,
+                not(eq("name", Const.DASHBOARD)), Sorts.ascending("name"));
     }
 
     public void save(Object object) {
@@ -65,7 +66,7 @@ public class DataService {
     }
 
     public App findApp(String appId) {
-        Arguments.requireNonBlank(appId, "appId can not be null");
+        Argument.validate(appId, Const.APP_ID_PATTERN);
 
         return datastore.find(App.class,
                 and(
@@ -74,28 +75,26 @@ public class DataService {
     }
 
     public void deleteApp(String appId) {
-        Arguments.requireNonBlank(appId, "appId can not be null");
+        Argument.validate(appId, Const.APP_ID_PATTERN);
 
         App app = findApp(appId);
-        datastore.delete(app);
+        if (app != null) {
+            datastore.delete(app);
+        }
     }
 
     public User findUser(String username, String appId) {
-        Arguments.requireNonBlank(username, "username can not be null");
-        Arguments.requireNonBlank(appId, "appId can not be null");
+        Argument.validate(username, Const.USERNAME_PATTERN);
+        Argument.validate(appId, Const.APP_ID_PATTERN);
 
-        if (Const.USERNAME_PATTERN.matcher(username).matches()) {
-            return datastore.find(User.class,
-                    and(
-                            eq("username", username),
-                            eq("appId", appId)));
-        }
-
-        return null;
+        return datastore.find(User.class,
+                and(
+                        eq("username", username),
+                        eq("appId", appId)));
     }
 
     public void removeUsersFromApp(String appId) {
-        Arguments.requireNonBlank(appId, "appId can not be null");
+        Argument.validate(appId, Const.APP_ID_PATTERN);
 
         App app = findApp(appId);
         if (app != null) {
@@ -104,14 +103,14 @@ public class DataService {
     }
 
     public boolean appExists(String name) {
-        Arguments.requireNonBlank(name, "name can not be null");
+        Argument.requireNonBlank(name, "name can not be null");
 
         return datastore.find(App.class,
                 regex("name", Pattern.compile(name, Pattern.CASE_INSENSITIVE))) != null;
     }
 
     public App findAppByUrl(String url) {
-        Arguments.requireNonBlank(url, "url can not be null or blank");
+        Argument.requireNonBlank(url, "url can not be null or blank");
         Preconditions.checkArgument(AppUtils.isValidUrl(url), "url is not a valid URL");
 
         return datastore.find(App.class,

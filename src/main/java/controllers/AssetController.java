@@ -21,11 +21,11 @@ public class AssetController {
         this.config = Objects.requireNonNull(config, "config can not be null");
     }
 
-    public Response styles(@NotBlank @Pattern(regexp = Const.APP_ID_PATTERN) String appId) {
+    public Response styles(@NotBlank @Pattern(regexp = Const.APP_ID_REGEX) String appId) {
         return Response.ok().contentType("text/css").render();
     }
 
-    public Response scripts(@NotBlank @Pattern(regexp = Const.APP_ID_PATTERN) String appId) {
+    public Response scripts(@NotBlank @Pattern(regexp = Const.APP_ID_REGEX) String appId) {
         App app = dataService.findApp(appId);
         if (app != null) {
             return Response.ok()

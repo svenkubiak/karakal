@@ -1,6 +1,6 @@
 package utils;
 
-import io.mangoo.utils.Arguments;
+import io.mangoo.utils.Argument;
 import models.App;
 
 import java.net.MalformedURLException;
@@ -12,7 +12,7 @@ import java.util.Objects;
 public final class AppUtils {
 
     public static String getDomain(String url) {
-        Arguments.requireNonBlank(url, "url can not be null or blank");
+        Argument.requireNonBlank(url, "url can not be null or blank");
         try {
             return URI.create(url).toURL().getHost();
         } catch (MalformedURLException e) {
@@ -33,7 +33,7 @@ public final class AppUtils {
 
     public static boolean isAllowedDomain(App app, String username) {
         Objects.requireNonNull(app, "app can not be null");
-        Arguments.requireNonBlank(username, "username can not be null or blank");
+        Argument.requireNonBlank(username, "username can not be null or blank");
 
         var allowedDomain = true;
         String allowedDomains = app.getEmail();
@@ -45,7 +45,7 @@ public final class AppUtils {
     }
 
     public static boolean matchesDomain(String email, List<String> domains) {
-        Arguments.requireNonBlank(email, "email can not be null or blank");
+        Argument.requireNonBlank(email, "email can not be null or blank");
         Objects.requireNonNull(domains, "domains can not be null");
 
         for (String domain : domains) {

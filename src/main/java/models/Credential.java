@@ -6,9 +6,6 @@ import com.webauthn4j.data.client.CollectedClientData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Minimal CredentialRecord-Implementierung für WebAuthn4j
- */
 public class Credential implements CredentialRecord {
     private final byte[] credentialId;
     private final byte[] credentialPublicKey;
@@ -29,9 +26,7 @@ public class Credential implements CredentialRecord {
     }
 
     @Override
-    public void setUvInitialized(boolean b) {
-
-    }
+    public void setUvInitialized(boolean b) {}
 
     @Nullable
     @Override
@@ -40,9 +35,7 @@ public class Credential implements CredentialRecord {
     }
 
     @Override
-    public void setBackupEligible(boolean b) {
-
-    }
+    public void setBackupEligible(boolean b) {}
 
     @Nullable
     @Override
@@ -51,9 +44,7 @@ public class Credential implements CredentialRecord {
     }
 
     @Override
-    public void setBackedUp(boolean b) {
-
-    }
+    public void setBackedUp(boolean b) {    }
 
     @Override
     public @Nullable CollectedClientData getClientData() {
@@ -72,7 +63,5 @@ public class Credential implements CredentialRecord {
     }
 
     @Override
-    public void setCounter(long l) {
-
-    }
+    public void setCounter(long l) {}
 }

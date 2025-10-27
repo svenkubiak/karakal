@@ -4,6 +4,7 @@ import constants.Const;
 import io.mangoo.annotations.Collection;
 import io.mangoo.annotations.Indexed;
 import io.mangoo.persistence.Entity;
+import io.mangoo.utils.Argument;
 import io.mangoo.utils.CommonUtils;
 import utils.JwtUtils;
 
@@ -29,6 +30,8 @@ public class App extends Entity {
     public App() {}
 
     public App(String name) {
+        Argument.requireNonBlank(name, "name can not be null or empty");
+
         this.appId = CommonUtils.randomString(32);
         this.name = name;
         this.registration = true;

@@ -3,7 +3,7 @@ package models;
 import io.mangoo.annotations.Collection;
 import io.mangoo.annotations.Indexed;
 import io.mangoo.persistence.Entity;
-import io.mangoo.utils.Arguments;
+import io.mangoo.utils.Argument;
 
 import java.time.LocalDateTime;
 
@@ -24,7 +24,7 @@ public class User extends Entity {
     public User() {}
 
     public User(String username) {
-        this.username = Arguments.requireNonBlank(username, "username can not be null or empty");
+        this.username = Argument.requireNonBlank(username, "username can not be null or empty");
         this.createdAt = LocalDateTime.now();
     }
 

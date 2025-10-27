@@ -63,7 +63,7 @@ public class DashboardController {
     }
 
     @FilterWith(PasskeyFilter.class)
-    public Response app(@NotBlank @Pattern(regexp = Const.APP_ID_PATTERN) String appId) {
+    public Response app(@NotBlank @Pattern(regexp = Const.APP_ID_REGEX) String appId) {
         App app = dataService.findApp(appId);
         if  (app != null) {
             return Response.ok().render("app", app);
@@ -73,7 +73,7 @@ public class DashboardController {
     }
 
     @FilterWith(PasskeyFilter.class)
-    public Response info(@NotBlank @Pattern(regexp = Const.APP_ID_PATTERN) String appId) {
+    public Response info(@NotBlank @Pattern(regexp = Const.APP_ID_REGEX) String appId) {
         App app = dataService.findApp(appId);
         if (app != null) {
             return Response.ok()
@@ -86,7 +86,7 @@ public class DashboardController {
 
 
     @FilterWith(PasskeyFilter.class)
-    public Response delete(@NotBlank @Pattern(regexp = Const.APP_ID_PATTERN) String appId) {
+    public Response delete(@NotBlank @Pattern(regexp = Const.APP_ID_REGEX) String appId) {
         dataService.removeUsersFromApp(appId);
         dataService.deleteApp(appId);
         return Response.ok();
