@@ -69,9 +69,7 @@ public class DataService {
         Argument.validate(appId, Const.APP_ID_PATTERN);
 
         return datastore.find(App.class,
-                and(
-                        eq("appId", appId),
-                        not(eq("name", Const.DASHBOARD))));
+                and(eq("appId", appId)));
     }
 
     public void deleteApp(String appId) {

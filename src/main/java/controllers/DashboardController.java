@@ -125,7 +125,7 @@ public class DashboardController {
             app.setRedirect(form.get("redirect"));
             app.setAudience(form.get("audience"));
             app.setEmail(form.get("email"));
-            app.setTtl(form.getLong("ttl").orElse(Const.COOKIE_MAX_AGE));
+            app.setTtl(form.getLong("ttl").orElse((long) Const.COOKIE_MAX_AGE));
             dataService.save(app);
         } else {
             form.keep();

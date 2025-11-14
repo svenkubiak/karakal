@@ -5,15 +5,23 @@ const container = document.getElementById("karakal-auth");
 if (!api || api.trim() === "") {
     console.log("data-api is missing or empty");
     if (container) {
-        container.innerHTML = error();
+        container.textContent = '';
+        const fragment = document.createRange().createContextualFragment(error());
+        container.appendChild(fragment);
     }
 }
 
 if (!appId || appId.trim() === "") {
     console.log("data-application-id is missing or empty");
     if (container) {
-        container.innerHTML = error();
+        container.textContent = '';
+        const fragment = document.createRange().createContextualFragment(error());
+        container.appendChild(fragment);
     }
+}
+
+if (location.protocol !== 'https:') {
+    alert('This application requires a secure HTTPS connection.');
 }
 
 if (!container) {
@@ -159,6 +167,7 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                 options.user.id = base64urlToBuffer(options.user.id);
             }
 
+            options.userVerification = 'required';
             const credential = await navigator.credentials.create({publicKey: options});
 
             const serializedCredential = {
@@ -179,17 +188,23 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
             });
 
             if (registerCompleteResponse.ok) {
-                container.innerHTML = success();
+                container.textContent = '';
+                const fragment = document.createRange().createContextualFragment(success());
+                container.appendChild(fragment);
                 const toLogin = document.getElementById("to-login");
                 toLogin.addEventListener('click', function (e) {
                     e.preventDefault();
                     showForm('login');
                 });
             } else {
-                container.innerHTML = error();
+                container.textContent = '';
+                const fragment = document.createRange().createContextualFragment(error());
+                container.appendChild(fragment);
             }
         } else {
-            container.innerHTML = error();
+            container.textContent = '';
+            const fragment = document.createRange().createContextualFragment(error());
+            container.appendChild(fragment);
         }
     }
 
@@ -213,39 +228,37 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                 options.challenge = base64urlToBuffer(options.challenge);
             }
 
+            options.userVerification = 'required';
             const assertion = await navigator.credentials.get({publicKey: options});
             const loginCompleteResponse = await fetch('${api}/api/v1/login-complete', {
                 method: 'POST',
                 body: JSON.stringify(assertion),
                 headers: {'Content-Type': 'application/json', 'karakal-username': username, 'karakal-app-id': appId},
+                credentials: 'include'
             });
 
             if (loginCompleteResponse.ok) {
                 localStorage.setItem('username', username);
                 const data = await loginCompleteResponse.json();
-                const name = data.name;
-                const jwt = data.jwt;
-                const maxAge = data.maxAge;
                 const redirect= data.redirect;
-
-                document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(jwt) +
-                    "; max-age=" + maxAge +
-                    "; path=/" +
-                    "; SameSite=Strict" +
-                    "; Secure";
-
                 window.location.replace(redirect);
             } else {
-                container.innerHTML = error();
+                container.textContent = '';
+                const fragment = document.createRange().createContextualFragment(error());
+                container.appendChild(fragment);
             }
         } else {
-            container.innerHTML = error();
+            container.textContent = '';
+            const fragment = document.createRange().createContextualFragment(error());
+            container.appendChild(fragment);
         }
     }
 
     function showForm(formType) {
         if (formType === 'login') {
-            container.innerHTML = loginForm();
+            container.textContent = '';
+            const fragment = document.createRange().createContextualFragment(loginForm());
+            container.appendChild(fragment);
 
             const usernameInput = document.getElementById("username");
             if (usernameInput) {
@@ -304,7 +317,9 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                 });
             }
         } else {
-            container.innerHTML = registerForm();
+            container.textContent = '';
+            const fragment = document.createRange().createContextualFragment(registerForm());
+            container.appendChild(fragment);
 
             const registerInit = document.getElementById("register-init");
             if (registerInit) {

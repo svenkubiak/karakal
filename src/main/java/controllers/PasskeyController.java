@@ -15,6 +15,7 @@ import io.mangoo.routing.Response;
 import io.mangoo.routing.bindings.Request;
 import io.mangoo.utils.CommonUtils;
 import io.mangoo.utils.JsonUtils;
+import io.undertow.server.handlers.CookieImpl;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -319,13 +320,19 @@ public class PasskeyController {
                     dataService.save(user);
                 }
 
+                var cookie = new CookieImpl(Const.COOKIE_NAME)
+                        .setDomain(AppUtils.getDomain(app.getUrl()))
+                        .setSameSiteMode("Strict")
+                        .setHttpOnly(true)
+                        .setSecure(true)
+                        .setPath("/")
+                        .setMaxAge(Const.COOKIE_MAX_AGE * 1000)
+                        .setValue(jwt);
+
                 return Response.ok()
                         .header("Access-Control-Allow-Origin", app.getUrl())
-                        .bodyJson(Map.of("jwt", jwt,
-                                "name", Const.COOKIE_NAME,
-                                "maxAge",
-                                Const.COOKIE_MAX_AGE * 1000,
-                                "redirect", app.getRedirect()));
+                        .cookie(cookie)
+                        .bodyJson(Map.of("redirect", app.getRedirect()));
 
             } catch (Exception e) {
                 LOG.error("Failed to complete authentication", e);
