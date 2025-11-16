@@ -20,6 +20,16 @@
             </div>
             <div class="field has-text-left">
                 <label class="label">
+                    Cookie name
+                </label>
+                <p class="control has-icons-left ">
+                    <input class="input" type="text" name="name" disabled value="__Host-karakal-auth">
+                    <span class="icon is-left"><i class="fas fa-cookie"></i></span>
+                </p>
+                <p class="help">The unique identifier of your application.</p>
+            </div>
+            <div class="field has-text-left">
+                <label class="label">
                     URL
                 </label>
                 <p class="control has-icons-left ">
