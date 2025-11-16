@@ -46,7 +46,7 @@ public class DataService {
     }
 
     public App findDashboard() {
-        return datastore.find(App.class, eq("name", Const.DASHBOARD));
+        return datastore.find(App.class, eq("name", Pattern.compile(Const.DASHBOARD, Pattern.CASE_INSENSITIVE)));
     }
 
     public void indexify() {
