@@ -3,12 +3,16 @@ package services;
 import com.google.common.base.Preconditions;
 import com.mongodb.client.model.*;
 import constants.Const;
+import io.mangoo.cache.Cache;
 import io.mangoo.core.Config;
 import io.mangoo.persistence.interfaces.Datastore;
+import io.mangoo.routing.bindings.Request;
 import io.mangoo.utils.Argument;
+import io.mangoo.utils.CommonUtils;
 import jakarta.inject.Inject;
 import models.App;
 import models.User;
+import org.apache.fury.util.StringUtils;
 import utils.AppUtils;
 
 import java.util.List;
@@ -20,11 +24,13 @@ import static com.mongodb.client.model.Filters.*;
 public class DataService {
     private final Datastore datastore;
     private final Config config;
+    private final Cache cache;
 
     @Inject
-    public DataService(Datastore datastore, Config config) {
+    public DataService(Datastore datastore, Config config, Cache cache) {
         this.datastore = Objects.requireNonNull(datastore, "datastore can not be null");
         this.config = Objects.requireNonNull(config, "config can not be null");
+        this.cache = Objects.requireNonNull(cache, "cache can not be null");
     }
 
     public void init() {
@@ -56,8 +62,7 @@ public class DataService {
     }
 
     public List<App> findApps() {
-        return datastore.findAll(App.class,
-                not(eq("name", Const.DASHBOARD)), Sorts.ascending("name"));
+        return datastore.findAll(App.class, Sorts.ascending("name"));
     }
 
     public void save(Object object) {
@@ -66,12 +71,7 @@ public class DataService {
     }
 
     public App findApp(String appId) {
-        Argument.validate(appId, Const.APP_ID_PATTERN);
-
-        return datastore.find(App.class,
-                and(
-                        eq("appId", appId),
-                        not(eq("name", Const.DASHBOARD))));
+        return datastore.find(App.class, eq("appId", appId));
     }
 
     public void deleteApp(String appId) {
@@ -117,5 +117,21 @@ public class DataService {
                 and(
                         eq("url", url),
                         not(eq("name", Const.DASHBOARD))));
+    }
+
+    public void generateNonce() {
+        List<App> apps = findApps();
+        for (App app : apps) {
+            cache.put("nonce-" + app.getAppId(), CommonUtils.randomString(32));
+        }
+    }
+
+    public boolean isValidNonce(App app, Request request) {
+        Objects.requireNonNull(app, "app can not be null");
+        Objects.requireNonNull(request, "request can not be null");
+
+        String nonce = request.getHeader("karakal-nonce");
+        return StringUtils.isNotBlank(nonce) &&
+               nonce.equals(cache.get("nonce-" + app.getAppId()));
     }
 }

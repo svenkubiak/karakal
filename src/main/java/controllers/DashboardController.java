@@ -45,7 +45,6 @@ public class DashboardController {
         Cookie cookie = new CookieImpl(Const.COOKIE_NAME)
                 .setPath("/")
                 .setSecure(true)
-                .setDomain(AppUtils.getDomain(dashboard.getUrl()))
                 .setValue("")
                 .setMaxAge(-1)
                 .setDiscard(true)
@@ -63,13 +62,13 @@ public class DashboardController {
     }
 
     @FilterWith(PasskeyFilter.class)
-    public Response app(@NotBlank @Pattern(regexp = Const.APP_ID_REGEX) String appId) {
-        App app = dataService.findApp(appId);
-        if  (app != null) {
-            return Response.ok().render("app", app);
+    public Response app(String appId) {
+        App app = null;
+        if (StringUtils.isNotBlank(appId) && AppUtils.isValidAppId(appId)) {
+            app = dataService.findApp(appId);
         }
 
-        return Response.notFound().bodyDefault();
+        return Response.ok().render("app", app);
     }
 
     @FilterWith(PasskeyFilter.class)

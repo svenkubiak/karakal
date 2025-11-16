@@ -49,8 +49,7 @@ public class Bootstrap implements MangooBootstrap {
         );
 
         Bind.controller(AssetController.class).withRoutes(
-                On.get().to("/api/v1/assets/{appId}/karakal.min.js").respondeWith("scripts"),
-                On.get().to("/api/v1/assets/{appId}/karakal.min.css").respondeWith("styles")
+                On.get().to("/api/v1/assets/{appId}/karakal.min.js").respondeWith("script")
         );
 
         Bind.controller(PasskeyController.class).withRoutes(
@@ -84,6 +83,7 @@ public class Bootstrap implements MangooBootstrap {
     public void applicationStarted() {
         dataService.init();
         dataService.indexify();
+        dataService.generateNonce();
     }
 
     @Override

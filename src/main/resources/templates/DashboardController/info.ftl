@@ -3,7 +3,7 @@
 <div class="container">
     <div class="columns">
         <div class="column is-half">
-            <h1 class="title">Add information for '${app.name}'</h1>
+            <h1 class="title">App information for '${app.name}'</h1>
         </div>
     </div>
     <div class="columns is-centered is-multiline">

@@ -1,5 +1,6 @@
 package utils;
 
+import constants.Const;
 import io.mangoo.utils.Argument;
 import models.App;
 
@@ -10,13 +11,14 @@ import java.util.List;
 import java.util.Objects;
 
 public final class AppUtils {
-
     public static String getDomain(String url) {
         Argument.requireNonBlank(url, "url can not be null or blank");
         try {
             return URI.create(url).toURL().getHost();
         } catch (MalformedURLException e) {
             //Intentionally left lank
+        } catch (IllegalArgumentException e) {
+            // Invalid URI syntax
         }
 
         return "";
@@ -29,6 +31,10 @@ public final class AppUtils {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public static boolean isValidAppId(String appId) {
+        return Const.APP_ID_PATTERN.matcher(appId).matches();
     }
 
     public static boolean isAllowedDomain(App app, String username) {
@@ -49,7 +55,8 @@ public final class AppUtils {
         Objects.requireNonNull(domains, "domains can not be null");
 
         for (String domain : domains) {
-            if (email.trim().endsWith(domain)) {
+            String trimmedDomain = domain == null ? "" : domain.trim();
+            if (!trimmedDomain.isEmpty() && email.trim().endsWith(trimmedDomain)) {
                 return true;
             }
         }

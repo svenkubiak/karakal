@@ -1,18 +1,19 @@
 const api = "${api}"
 const appId = "${appId}";
+const nonce = "${nonce}";
 const container = document.getElementById("karakal-auth");
 
 if (!api || api.trim() === "") {
     console.log("data-api is missing or empty");
     if (container) {
-        container.innerHTML = error();
+        renderFragment(error)
     }
 }
 
 if (!appId || appId.trim() === "") {
     console.log("data-application-id is missing or empty");
     if (container) {
-        container.innerHTML = error();
+        renderFragment(error)
     }
 }
 
@@ -118,6 +119,21 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
         });
     }
 
+    function renderFragment(fragment) {
+        container.textContent = '';
+        const child = document.createRange().createContextualFragment(fragment());
+        container.appendChild(child);
+
+        const tryAgain = document.getElementById("try-again");
+        if (tryAgain) {
+            tryAgain.addEventListener('click', function (e) {
+                e.preventDefault();
+                console.log('Try Again');
+                showForm('login');
+            });
+        }
+    }
+
     function base64urlToBuffer(base64url) {
         if (typeof base64url !== "string") {
             if (base64url instanceof ArrayBuffer) return base64url;
@@ -142,7 +158,10 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
     async function register(username) {
         const registerInitResponse = await fetch('${api}/api/v1/register-init', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+                'Content-Type': 'application/json',
+                'karakal-nonce': nonce
+            },
             body: JSON.stringify({username, appId})
         });
 
@@ -174,29 +193,37 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
 
             const registerCompleteResponse = await fetch('${api}/api/v1/register-complete', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json', 'karakal-username': username, 'karakal-app-id': appId},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'karakal-username': username,
+                    'karakal-app-id': appId,
+                    'karakal-nonce': nonce
+                },
                 body: JSON.stringify(serializedCredential)
             });
 
             if (registerCompleteResponse.ok) {
-                container.innerHTML = success();
+                renderFragment(success);
                 const toLogin = document.getElementById("to-login");
                 toLogin.addEventListener('click', function (e) {
                     e.preventDefault();
                     showForm('login');
                 });
             } else {
-                container.innerHTML = error();
+                renderFragment(error);
             }
         } else {
-            container.innerHTML = error();
+            renderFragment(error);
         }
     }
 
     async function login(username) {
         const loginInitResponse = await fetch('${api}/api/v1/login-init', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+                'Content-Type': 'application/json',
+                'karakal-nonce': nonce
+            },
             body: JSON.stringify({username, appId})
         });
 
@@ -217,7 +244,12 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
             const loginCompleteResponse = await fetch('${api}/api/v1/login-complete', {
                 method: 'POST',
                 body: JSON.stringify(assertion),
-                headers: {'Content-Type': 'application/json', 'karakal-username': username, 'karakal-app-id': appId},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'karakal-username': username,
+                    'karakal-app-id': appId,
+                    'karakal-nonce': nonce
+                },
             });
 
             if (loginCompleteResponse.ok) {
@@ -226,7 +258,7 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                 const name = data.name;
                 const jwt = data.jwt;
                 const maxAge = data.maxAge;
-                const redirect= data.redirect;
+                const redirect = data.redirect;
 
                 document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(jwt) +
                     "; max-age=" + maxAge +
@@ -236,16 +268,16 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
 
                 window.location.replace(redirect);
             } else {
-                container.innerHTML = error();
+                renderFragment(error);
             }
         } else {
-            container.innerHTML = error();
+            renderFragment(error);
         }
     }
 
     function showForm(formType) {
         if (formType === 'login') {
-            container.innerHTML = loginForm();
+            renderFragment(loginForm);
 
             const usernameInput = document.getElementById("username");
             if (usernameInput) {
@@ -304,7 +336,7 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                 });
             }
         } else {
-            container.innerHTML = registerForm();
+            renderFragment(registerForm);
 
             const registerInit = document.getElementById("register-init");
             if (registerInit) {
@@ -339,16 +371,8 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
 
     Promise.all([
         loadCss("${api}/assets/css/bulma.min.css"),
-        loadCss("${api}/api/v1/assets/${appId}/karakal.min.css")
+        loadCss("${api}/assets/css/karakal.min.css")
     ]).then(() => {
         showForm('login');
     });
-
-    const tryAgain = document.getElementById("try-again");
-    if (tryAgain) {
-        tryAgain.addEventListener('click', function (e) {
-            e.preventDefault();
-            showForm('login');
-        });
-    }
 }

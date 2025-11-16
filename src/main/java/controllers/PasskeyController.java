@@ -82,10 +82,10 @@ public class PasskeyController {
         return Response.notFound();
     }
 
-    public Response registerInit(@NotNull @NotEmpty Map<String, String> data) {
+    public Response registerInit(@NotNull @NotEmpty Map<String, String> data, Request request) {
         App app = dataService.findApp(data.get("appId"));
 
-        if (app != null && app.isRegistration()) {
+        if (app != null && app.isRegistration() && dataService.isValidNonce(app, request)) {
             String username = data.get("username");
             User user = dataService.findUser(username, app.getAppId());
 
@@ -131,7 +131,7 @@ public class PasskeyController {
                         .header("Vary", "Origin")
                         .header("Access-Control-Allow-Origin", app.getUrl())
                         .header("Access-Control-Allow-Methods", "POST, OPTIONS")
-                        .header("Access-Control-Allow-Headers", "Content-Type, karakal-username, karakal-app-id");
+                        .header("Access-Control-Allow-Headers", "Content-Type, karakal-username, karakal-app-id, karakal-nonce");
             }
         }
 
@@ -148,7 +148,12 @@ public class PasskeyController {
                 user = dataService.findUser(username, app.getAppId());
             }
 
-            if (app != null && app.isRegistration() && user == null && StringUtils.isNotBlank(body)) {
+            if (app != null &&
+                app.isRegistration() &&
+                user == null &&
+                StringUtils.isNotBlank(body) &&
+                dataService.isValidNonce(app, request)) {
+
                 WebAuthnManager webAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
 
                 byte[] challenge = CacheUtils.getRegisterChallenge(username);
@@ -156,10 +161,12 @@ public class PasskeyController {
                     return Response.badRequest();
                 }
 
-                ServerProperty serverProperty = new ServerProperty(
-                        new Origin(app.getUrl()), AppUtils.getDomain(app.getUrl()),
-                        new DefaultChallenge(challenge)
-                );
+                ServerProperty serverProperty = ServerProperty
+                        .builder()
+                        .origin(new Origin(app.getUrl()))
+                        .rpId(AppUtils.getDomain(app.getUrl()))
+                        .challenge(new DefaultChallenge(challenge))
+                        .build();
 
                 RegistrationParameters registrationParameters = new RegistrationParameters(
                         serverProperty,
@@ -211,7 +218,7 @@ public class PasskeyController {
         return Response.badRequest();
     }
 
-    public Response loginInit(@NotNull @NotEmpty Map<String, String> data) {
+    public Response loginInit(@NotNull @NotEmpty Map<String, String> data, Request request) {
         String username = data.get("username");
 
         App app = dataService.findApp(data.get("appId"));
@@ -220,7 +227,7 @@ public class PasskeyController {
         }
 
         User user = dataService.findUser(username, app.getAppId());
-        if (AppUtils.isAllowedDomain(app, username) && user != null) {
+        if (AppUtils.isAllowedDomain(app, username) && user != null && dataService.isValidNonce(app, request)) {
             Map<String, Object> allowCredential = new HashMap<>();
             allowCredential.put("type", "public-key");
             allowCredential.put("id", CommonUtils.urlEncodeWithoutPaddingToBase64(user.getCredentialId()));
@@ -252,7 +259,7 @@ public class PasskeyController {
         }
 
         String body = request.getBody();
-        if (user != null && StringUtils.isNotBlank(body)) {
+        if (user != null && StringUtils.isNotBlank(body) && dataService.isValidNonce(app, request)) {
             WebAuthnManager manager = WebAuthnManager.createNonStrictWebAuthnManager();
             AuthenticationData authData = manager.parseAuthenticationResponseJSON(body);
 
@@ -261,10 +268,12 @@ public class PasskeyController {
                 return Response.badRequest();
             }
 
-            ServerProperty serverProperty = new ServerProperty(
-                    new Origin(app.getUrl()), AppUtils.getDomain(app.getUrl()),
-                    new DefaultChallenge(challenge)
-            );
+            ServerProperty serverProperty = ServerProperty
+                    .builder()
+                    .origin(new Origin(app.getUrl()))
+                    .rpId(AppUtils.getDomain(app.getUrl()))
+                    .challenge(new DefaultChallenge(challenge))
+                    .build();
 
             Map coseMap = JsonUtils.getMapper().readValue(user.getCoseKey(), Map.class);
             byte[] x = CommonUtils.decodeFromBase64((String) coseMap.get("-2"));
@@ -300,7 +309,7 @@ public class PasskeyController {
                     .withIssuer(config.getString("karakal.url"))
                     .withSubject(user.getUsername())
                     .withSigningKey(JwtUtils.fromBase64Private(app.getPrivateKey()))
-                    .withTtlSeconds(Const.COOKIE_MAX_AGE);
+                    .withTtlSeconds(app.getTtl());
 
             var jwt = JwtUtils.createJwt(jwtData);
 
@@ -321,10 +330,10 @@ public class PasskeyController {
 
                 return Response.ok()
                         .header("Access-Control-Allow-Origin", app.getUrl())
-                        .bodyJson(Map.of("jwt", jwt,
+                        .bodyJson(Map.of(
+                                "jwt", jwt,
                                 "name", Const.COOKIE_NAME,
-                                "maxAge",
-                                Const.COOKIE_MAX_AGE * 1000,
+                                "maxAge", app.getTtl(),
                                 "redirect", app.getRedirect()));
 
             } catch (Exception e) {
