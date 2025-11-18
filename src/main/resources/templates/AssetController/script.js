@@ -1,24 +1,17 @@
 const api = "${api}"
 const appId = "${appId}";
 const nonce = "${nonce}";
+const localStorageKey = "${appId}-username";
 const container = document.getElementById("karakal-auth");
 
-if (!api || api.trim() === "") {
-    console.log("data-api is missing or empty");
-    if (container) {
-        renderFragment(error)
-    }
-}
-
-if (!appId || appId.trim() === "") {
-    console.log("data-application-id is missing or empty");
-    if (container) {
-        renderFragment(error)
-    }
-}
-
-if (!container) {
-    console.log("Container element with id 'karakal-auth' does not exist");
+const missing = [];
+if (!api || api.trim() === "") missing.push('data-api');
+if (!appId || appId.trim() === "") missing.push('data-application-id');
+if (!container) missing.push('karakal-auth container');
+if (missing.length) {
+    console.log("Missing:", missing.join(", "));
+    if (container) renderFragment(error);
+    throw new Error("karakal-auth initialization failed: " + missing.join(", "));
 }
 
 function success() {
@@ -30,7 +23,7 @@ function success() {
       <h1 class="title is-4 has-text-success">Success!</h1>
       <p class="subtitle is-6">Your registration was completed successfully.</p>
     </div>
-    <div class="mt-4 has-text-centered"">
+    <div class="mt-4 has-text-centered">
       <button class="button is-primary is-fullwidth" id="to-login">Sign in now</button>
     </div>
 </div>
@@ -75,7 +68,7 @@ function loginForm() {
       Don’t have an account? <a href="#" id="register-form">Register</a>
     </div>
     </#if>
-        <div class="alt-link" id="different-account">
+      <div class="alt-link" id="different-account">
       <a href="#" id="use-different-account">Sign in with another account</a>
     </div>
   </div>
@@ -89,6 +82,7 @@ function registerForm() {
   <div class="auth-box" id="register">
     <h1 class="title auth-title">Register</h1>
     <p class="auth-subtitle">Create an account to get started.</p>
+    <form>
       <div class="field">
         <label class="label">Email Address</label>
         <div class="control">
@@ -253,7 +247,7 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
             });
 
             if (loginCompleteResponse.ok) {
-                localStorage.setItem('username', username);
+                localStorage.setItem(localStorageKey, username);
                 const data = await loginCompleteResponse.json();
                 const name = data.name;
                 const jwt = data.jwt;
@@ -278,29 +272,27 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
     function showForm(formType) {
         if (formType === 'login') {
             renderFragment(loginForm);
-
             const usernameInput = document.getElementById("username");
+            const differentAccount = document.getElementById("use-different-account");
+
             if (usernameInput) {
-                const username = localStorage.getItem("username");
+                const username = localStorage.getItem(localStorageKey);
                 if (username !== null && username !== undefined && username !== "") {
                     usernameInput.value = username;
-                    document.getElementById('username').disabled = true;
+                    usernameInput.disabled = true;
                 } else {
-                    const differentAccount = document.getElementById("different-account");
                     if (differentAccount) {
                         differentAccount.remove();
                     }
                 }
             }
 
-            const differentAccount = document.getElementById("use-different-account");
             if (differentAccount) {
                 differentAccount.addEventListener("click", (e) => {
                     e.preventDefault();
-                    document.getElementById('username').disabled = false;
-                    document.getElementById("username").value = "";
-                    localStorage.removeItem("username");
-                    const differentAccount = document.getElementById("different-account");
+                    usernameInput.disabled = false;
+                    usernameInput.value = "";
+                    localStorage.removeItem(localStorageKey);
                     if (differentAccount) {
                         differentAccount.remove();
                     }
@@ -311,16 +303,16 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
             if (loginInit) {
                 loginInit.addEventListener('click', function (e) {
                     e.preventDefault();
-                    const username = document.getElementById("username").value;
+                    const username = usernameInput.value;
                     if (username) {
                         login(username);
                     }
                 });
 
-                document.getElementById("username").addEventListener('keydown', function (e) {
+                usernameInput.addEventListener('keydown', function (e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        const username = document.getElementById("username").value;
+                        const username = usernameInput.value;
                         if (username) {
                             login(username);
                         }
@@ -337,21 +329,22 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
             }
         } else {
             renderFragment(registerForm);
-
+            const usernameInput = document.getElementById("username");
             const registerInit = document.getElementById("register-init");
+
             if (registerInit) {
                 registerInit.addEventListener('click', function (e) {
                     e.preventDefault();
-                    const username = document.getElementById("username").value;
+                    const username = usernameInput.value;
                     if (username) {
                         register(username);
                     }
                 });
 
-                document.getElementById("username").addEventListener('keydown', function (e) {
+                usernameInput.addEventListener('keydown', function (e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        const username = document.getElementById("username").value;
+                        const username = usernameInput.value;
                         if (username) {
                             register(username);
                         }

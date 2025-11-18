@@ -31,6 +31,7 @@ import utils.AppUtils;
 import utils.CacheUtils;
 import utils.JwtUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
@@ -89,21 +90,21 @@ public class PasskeyController {
             String username = data.get("username");
             User user = dataService.findUser(username, app.getAppId());
 
-            if (AppUtils.isAllowedDomain(app, username) && user == null && app.isRegistration()) {
+            if (user == null && AppUtils.isAllowedDomain(app, username) && app.isRegistration())  {
                 DefaultChallenge challenge = new DefaultChallenge();
                 CacheUtils.cacheRegisterChallenge(username, challenge.getValue());
 
                 AuthenticatorSelectionCriteria authenticatorSelectionCriteria =
                         new AuthenticatorSelectionCriteria(
                                 AuthenticatorAttachment.CROSS_PLATFORM,
-                                false,
+                                Boolean.FALSE,
                                 ResidentKeyRequirement.PREFERRED,
                                 UserVerificationRequirement.REQUIRED
                         );
 
                 PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(
                         new PublicKeyCredentialRpEntity(AppUtils.getDomain(app.getUrl()), AppUtils.getDomain(app.getUrl())),
-                        new PublicKeyCredentialUserEntity(CommonUtils.uuidV6().getBytes(), username, ""),
+                        new PublicKeyCredentialUserEntity(CommonUtils.uuidV6().getBytes(StandardCharsets.UTF_8), username, ""),
                         challenge,
                         List.of(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256)),
                         60000L,
@@ -227,7 +228,7 @@ public class PasskeyController {
         }
 
         User user = dataService.findUser(username, app.getAppId());
-        if (AppUtils.isAllowedDomain(app, username) && user != null && dataService.isValidNonce(app, request)) {
+        if (user != null && AppUtils.isAllowedDomain(app, username) && dataService.isValidNonce(app, request)) {
             Map<String, Object> allowCredential = new HashMap<>();
             allowCredential.put("type", "public-key");
             allowCredential.put("id", CommonUtils.urlEncodeWithoutPaddingToBase64(user.getCredentialId()));
@@ -291,7 +292,7 @@ public class PasskeyController {
             Map<String, String> flatMap = JsonUtils.toFlatMap(user.getAttestedCredentialData());
             AttestedCredentialData attestedCredentialData = new AttestedCredentialData(
                     new AAGUID(CommonUtils.decodeFromBase64(flatMap.get("aaguid.bytes"))),
-                    flatMap.get("aaguid.value").getBytes(),
+                    flatMap.get("aaguid.value").getBytes(StandardCharsets.UTF_8),
                     coseKey
             );
 

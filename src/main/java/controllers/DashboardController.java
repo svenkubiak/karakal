@@ -119,7 +119,7 @@ public class DashboardController {
             }
 
             app.setName(form.get("name"));
-            app.setRegistration(form.getBoolean("registration").orElse(false));
+            app.setRegistration(form.getBoolean("registration").orElse(Boolean.FALSE));
             app.setUrl(form.get("url"));
             app.setRedirect(form.get("redirect"));
             app.setAudience(form.get("audience"));
