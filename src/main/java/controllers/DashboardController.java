@@ -40,8 +40,6 @@ public class DashboardController {
 
     public Response logout(Session session) {
         session.clear();
-
-        App dashboard = dataService.findDashboard();
         Cookie cookie = new CookieImpl(Const.COOKIE_NAME)
                 .setPath("/")
                 .setSecure(true)
