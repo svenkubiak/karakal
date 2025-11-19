@@ -2,7 +2,6 @@ package controllers;
 
 import com.webauthn4j.WebAuthnManager;
 import com.webauthn4j.data.*;
-import com.webauthn4j.data.attestation.AttestationObject;
 import com.webauthn4j.data.attestation.authenticator.*;
 import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
 import com.webauthn4j.data.client.Origin;
@@ -20,7 +19,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import models.App;
 import models.Credential;
 import models.User;
 import org.apache.fury.util.StringUtils;
@@ -49,7 +47,7 @@ public class PasskeyController {
     }
 
     public Response jwks(@NotBlank @Pattern(regexp = Const.APP_ID_REGEX) String appId) {
-        App app = dataService.findApp(appId);
+        var app = dataService.findApp(appId);
         if (app != null) {
             try {
                 byte[] keyBytes = CommonUtils.decodeFromBase64(app.getPublicKey());
@@ -84,17 +82,16 @@ public class PasskeyController {
     }
 
     public Response registerInit(@NotNull @NotEmpty Map<String, String> data, Request request) {
-        App app = dataService.findApp(data.get("appId"));
-
+        var app = dataService.findApp(data.get("appId"));
         if (app != null && app.isRegistration() && dataService.isValidNonce(app, request)) {
             String username = data.get("username");
-            User user = dataService.findUser(username, app.getAppId());
+            var user = dataService.findUser(username, app.getAppId());
 
             if (user == null && AppUtils.isAllowedDomain(app, username) && app.isRegistration())  {
-                DefaultChallenge challenge = new DefaultChallenge();
+                var challenge = new DefaultChallenge();
                 CacheUtils.cacheRegisterChallenge(username, challenge.getValue());
 
-                AuthenticatorSelectionCriteria authenticatorSelectionCriteria =
+                var authenticatorSelectionCriteria =
                         new AuthenticatorSelectionCriteria(
                                 AuthenticatorAttachment.CROSS_PLATFORM,
                                 Boolean.FALSE,
@@ -102,7 +99,7 @@ public class PasskeyController {
                                 UserVerificationRequirement.REQUIRED
                         );
 
-                PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(
+                var options = new PublicKeyCredentialCreationOptions(
                         new PublicKeyCredentialRpEntity(AppUtils.getDomain(app.getUrl()), AppUtils.getDomain(app.getUrl())),
                         new PublicKeyCredentialUserEntity(CommonUtils.uuidV6().getBytes(StandardCharsets.UTF_8), username, ""),
                         challenge,
@@ -126,7 +123,7 @@ public class PasskeyController {
     public Response preflight(Request request) {
         String origin = request.getHeader("Origin");
         if (StringUtils.isNotBlank(origin)) {
-            App app = dataService.findAppByUrl(origin);
+            var app = dataService.findAppByUrl(origin);
             if (app != null) {
                 return Response.ok()
                         .header("Vary", "Origin")
@@ -144,7 +141,7 @@ public class PasskeyController {
             User user = null;
             String body = request.getBody();
             String username = request.getHeader("karakal-username");
-            App app = dataService.findApp(request.getHeader("karakal-app-id"));
+            var app = dataService.findApp(request.getHeader("karakal-app-id"));
             if (app != null) {
                 user = dataService.findUser(username, app.getAppId());
             }
@@ -155,32 +152,32 @@ public class PasskeyController {
                 StringUtils.isNotBlank(body) &&
                 dataService.isValidNonce(app, request)) {
 
-                WebAuthnManager webAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
+                var webAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
 
                 byte[] challenge = CacheUtils.getRegisterChallenge(username);
                 if (challenge == null) {
                     return Response.badRequest();
                 }
 
-                ServerProperty serverProperty = ServerProperty
+                var serverProperty = ServerProperty
                         .builder()
                         .origin(new Origin(app.getUrl()))
                         .rpId(AppUtils.getDomain(app.getUrl()))
                         .challenge(new DefaultChallenge(challenge))
                         .build();
 
-                RegistrationParameters registrationParameters = new RegistrationParameters(
+                var registrationParameters = new RegistrationParameters(
                         serverProperty,
                         null,
                         false,
                         true
                 );
 
-                RegistrationData registrationData = webAuthnManager.parseRegistrationResponseJSON(body);
+                var registrationData = webAuthnManager.parseRegistrationResponseJSON(body);
                 webAuthnManager.verify(registrationData, registrationParameters);
 
                 AttestedCredentialData attestedCredentialData = null;
-                AttestationObject attestationObject = registrationData.getAttestationObject();
+                var attestationObject = registrationData.getAttestationObject();
                 if (attestationObject != null) {
                     attestedCredentialData = attestationObject.getAuthenticatorData().getAttestedCredentialData();
                 }
@@ -222,12 +219,12 @@ public class PasskeyController {
     public Response loginInit(@NotNull @NotEmpty Map<String, String> data, Request request) {
         String username = data.get("username");
 
-        App app = dataService.findApp(data.get("appId"));
+        var app = dataService.findApp(data.get("appId"));
         if (app == null) {
             return Response.notFound();
         }
 
-        User user = dataService.findUser(username, app.getAppId());
+        var user = dataService.findUser(username, app.getAppId());
         if (user != null && AppUtils.isAllowedDomain(app, username) && dataService.isValidNonce(app, request)) {
             Map<String, Object> allowCredential = new HashMap<>();
             allowCredential.put("type", "public-key");
@@ -254,14 +251,14 @@ public class PasskeyController {
     @SuppressWarnings("rawtypes")
     public Response loginComplete(Request request) throws Exception {
         User user = null;
-        App app = dataService.findApp(request.getHeader("karakal-app-id"));
+        var app = dataService.findApp(request.getHeader("karakal-app-id"));
         if (app != null) {
             user = dataService.findUser(request.getHeader("karakal-username"), app.getAppId());
         }
 
         String body = request.getBody();
         if (user != null && StringUtils.isNotBlank(body) && dataService.isValidNonce(app, request)) {
-            WebAuthnManager manager = WebAuthnManager.createNonStrictWebAuthnManager();
+            var manager = WebAuthnManager.createNonStrictWebAuthnManager();
             AuthenticationData authData = manager.parseAuthenticationResponseJSON(body);
 
             byte[] challenge = CacheUtils.getLoginChallenge(user.getUsername());
@@ -269,7 +266,7 @@ public class PasskeyController {
                 return Response.badRequest();
             }
 
-            ServerProperty serverProperty = ServerProperty
+            var serverProperty = ServerProperty
                     .builder()
                     .origin(new Origin(app.getUrl()))
                     .rpId(AppUtils.getDomain(app.getUrl()))
@@ -280,7 +277,7 @@ public class PasskeyController {
             byte[] x = CommonUtils.decodeFromBase64((String) coseMap.get("-2"));
             byte[] y = CommonUtils.decodeFromBase64((String) coseMap.get("-3"));
 
-            EC2COSEKey coseKey = new EC2COSEKey(
+            var coseKey = new EC2COSEKey(
                     null,
                     COSEAlgorithmIdentifier.ES256,
                     null,
@@ -290,14 +287,14 @@ public class PasskeyController {
             );
 
             Map<String, String> flatMap = JsonUtils.toFlatMap(user.getAttestedCredentialData());
-            AttestedCredentialData attestedCredentialData = new AttestedCredentialData(
+            var attestedCredentialData = new AttestedCredentialData(
                     new AAGUID(CommonUtils.decodeFromBase64(flatMap.get("aaguid.bytes"))),
                     flatMap.get("aaguid.value").getBytes(StandardCharsets.UTF_8),
                     coseKey
             );
 
-            Credential credential = new Credential(user.getCredentialId(), user.getPublicKeyCose(), user.getSignCount(), attestedCredentialData);
-            AuthenticationParameters params = new AuthenticationParameters(
+            var credential = new Credential(user.getCredentialId(), user.getPublicKeyCose(), user.getSignCount(), attestedCredentialData);
+            var params = new AuthenticationParameters(
                     serverProperty,
                     credential,
                     List.of(user.getCredentialId()),

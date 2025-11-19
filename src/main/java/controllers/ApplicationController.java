@@ -5,7 +5,7 @@ import io.mangoo.routing.Response;
 public class ApplicationController {
 
     public Response index() {
-        return Response.ok().render();
+        return Response.redirect("/dashboard");
     }
 
     public Response health() {

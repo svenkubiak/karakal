@@ -12,4 +12,5 @@ public final class Const {
     public static final String DASHBOARD = "Dashboard";
     public static final long COOKIE_MAX_AGE = 600L;
     public static final Pattern DOMAIN_PATTERN = Pattern.compile("^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.[A-Za-z]{2,}$");
+    private Const() {}
 }

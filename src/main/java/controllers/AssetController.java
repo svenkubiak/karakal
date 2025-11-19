@@ -7,7 +7,6 @@ import io.mangoo.routing.Response;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import models.App;
 import services.DataService;
 
 import java.util.Objects;
@@ -25,7 +24,7 @@ public class AssetController {
     }
 
     public Response script(@NotBlank @Pattern(regexp = Const.APP_ID_REGEX) String appId) {
-        App app = dataService.findApp(appId);
+        var app = dataService.findApp(appId);
         if (app != null) {
             return Response.ok()
                     .contentType("text/javascript")

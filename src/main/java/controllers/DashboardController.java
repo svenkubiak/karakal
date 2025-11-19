@@ -71,7 +71,7 @@ public class DashboardController {
 
     @FilterWith(PasskeyFilter.class)
     public Response info(@NotBlank @Pattern(regexp = Const.APP_ID_REGEX) String appId) {
-        App app = dataService.findApp(appId);
+        var app = dataService.findApp(appId);
         if (app != null) {
             return Response.ok()
                     .render("app", app)
