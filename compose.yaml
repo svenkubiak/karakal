@@ -29,7 +29,7 @@ services:
       - karakal-network
 
   karakal-database:
-    image: mongodb/mongodb-community-server:8.2.1-ubuntu2204
+    image: mongodb/mongodb-community-server:8.2.2-ubuntu2204
     container_name: karakal-database
     restart: always
     environment:
