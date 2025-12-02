@@ -7,7 +7,7 @@
 	<packaging>jar</packaging>
 	<url>https://github.com/svenkubiak/karakal</url>
 	<properties>
-		<mangooio.version>10.1.0-Beta1</mangooio.version>
+		<mangooio.version>10.1.0</mangooio.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jdk.version>25</jdk.version>
 		<maven.compiler.optimze>true</maven.compiler.optimze>
@@ -209,7 +209,7 @@
         <dependency>
             <groupId>com.webauthn4j</groupId>
             <artifactId>webauthn4j-core</artifactId>
-            <version>0.30.0.RELEASE</version>
+            <version>0.30.1.RELEASE</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
