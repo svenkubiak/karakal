@@ -25,6 +25,12 @@
             <span>Applications</span>
           </a>
         </nav>
+        <div class="dashboard-sidebar-footer">
+          <a href="/dashboard/logout" class="button is-danger is-fullwidth">
+            <span class="icon is-small"><i class="fas fa-sign-out-alt"></i></span>
+            <span>Log out</span>
+          </a>
+        </div>
       </aside>
       <div class="dashboard-main">
         <header class="dashboard-header">
@@ -33,12 +39,6 @@
             <span aria-hidden="true"></span>
             <span aria-hidden="true"></span>
           </button>
-          <div class="dashboard-header-actions">
-            <a class="button is-danger" href="/dashboard/logout">
-              <span class="icon is-small"><i class="fas fa-sign-out-alt"></i></span>
-              <span>Logout</span>
-            </a>
-          </div>
         </header>
         <main class="dashboard-content">
           <#nested>
