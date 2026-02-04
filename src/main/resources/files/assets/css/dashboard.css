@@ -388,10 +388,47 @@
   margin-bottom: 0;
 }
 
+.dashboard-info-field {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.dashboard-info-field .control {
+  flex: 1;
+  min-width: 0;
+}
+
 .dashboard-info-item .input:disabled {
   background: var(--dashboard-sidebar-bg);
   border-color: var(--dashboard-sidebar-border);
   color: var(--dashboard-accent);
+}
+
+.dashboard-info-item .copy-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  background: var(--dashboard-sidebar-bg);
+  border: 1px solid var(--dashboard-sidebar-border);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--dashboard-text-muted);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.dashboard-info-item .copy-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: var(--dashboard-accent);
+  color: var(--dashboard-accent);
+}
+
+.dashboard-info-item .copy-btn i.fa-check {
+  color: #48c78e;
 }
 
 /* Legacy Bulma card overrides (app.ftl, info.ftl) */
