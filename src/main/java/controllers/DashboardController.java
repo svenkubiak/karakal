@@ -77,7 +77,6 @@ public class DashboardController {
                     .render("app", app)
                     .render("url", config.getString("karakal.url"));
         }
-
         return Response.notFound().bodyDefault();
     }
 

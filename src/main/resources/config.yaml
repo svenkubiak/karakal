@@ -16,7 +16,7 @@ default:
       enable: true
   connector:
     http:
-      host: 192.168.1.222
+      host: 192.168.1.224
       port: 8080
   karakal:
     url: https://karakal.local.kubiak.me

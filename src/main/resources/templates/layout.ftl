@@ -1,48 +1,50 @@
-<#macro myLayout title="Layout example">
+<#macro myLayout title="Layout example" section="applications">
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Karakal Dashboard</title>
+    <title>${title} — Karakal</title>
     <link rel="stylesheet" href="/assets/css/bulma.min.css">
     <link rel="stylesheet" href="/assets/css/all.min.css">
     <link rel="stylesheet" href="/assets/css/dashboard.min.css">
   </head>
-  <body>
-  <nav class="navbar is-link" role="navigation" aria-label="main navigation">
-      <div class="navbar-brand">
-          <a class="navbar-item" href="/dashboard">
-              <svg width="640" height="160" viewBox="0 0 640 160" xmlns="http://www.w3.org/2000/svg">
-                  <text x="50" y="125" font-size="110" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#fff">KARAKAL</text>
-              </svg>
+  <body class="dashboard-body">
+    <div class="dashboard-layout">
+      <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="dashboard-sidebar-brand">
+          <a href="/dashboard" class="dashboard-sidebar-logo">
+            <span class="dashboard-sidebar-logo-text">KARAKAL</span>
           </a>
-          <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasic">
-              <span aria-hidden="true"></span>
-              <span aria-hidden="true"></span>
-              <span aria-hidden="true"></span>
-              <span aria-hidden="true"></span>
+        </div>
+        <nav class="dashboard-sidebar-nav">
+          <p class="dashboard-sidebar-menu-label">Menu</p>
+          <a href="/dashboard" class="dashboard-sidebar-item <#if section == "applications">is-active</#if>">
+            <span class="icon is-small"><i class="fas fa-th-large"></i></span>
+            <span>Applications</span>
           </a>
-      </div>
-      <div id="navbarBasic" class="navbar-menu">
-          <div class="navbar-start">
-              <a href="/dashboard" class="navbar-item">
-                  Applications
-              </a>
+        </nav>
+      </aside>
+      <div class="dashboard-main">
+        <header class="dashboard-header">
+          <button type="button" class="dashboard-sidebar-toggle navbar-burger" aria-label="menu" aria-expanded="false" data-target="dashboardSidebar">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </button>
+          <div class="dashboard-header-actions">
+            <a class="button is-danger" href="/dashboard/logout">
+              <span class="icon is-small"><i class="fas fa-sign-out-alt"></i></span>
+              <span>Logout</span>
+            </a>
           </div>
-          <div class="navbar-end">
-              <div class="navbar-item">
-                  <div class="buttons">
-                      <a class="button is-danger" href="/dashboard/logout">
-                          <strong>Logout</strong>
-                      </a>
-                  </div>
-              </div>
-          </div>
+        </header>
+        <main class="dashboard-content">
+          <#nested>
+        </main>
       </div>
-  </nav>
-  <#nested>
+    </div>
   </body>
   <script src="/assets/js/dashboard.min.js"></script>
 </html>
