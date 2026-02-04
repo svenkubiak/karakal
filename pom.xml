@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>karakal</artifactId>
 	<groupId>de.svenkubiak</groupId>
-	<version>1.0.12-SNAPSHOT</version>
+	<version>1.1.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<url>https://github.com/svenkubiak/karakal</url>
 	<properties>
