@@ -105,7 +105,9 @@ public class DashboardController {
         form.expectUrl("redirect", "Redirect must be a valid URL.");
         form.expectValue("url", "URL must be a valid URL.");
         form.expectUrl("url", "URL must be a valid URL.");
-        form.expectTrue("email", AppUtils.validateCommaSeparatedDomains(form.get("email")), "E-mails domains must be comma seperated value of domains");
+        if (StringUtils.isNotBlank(form.get("email"))) {
+            form.expectTrue("email", AppUtils.validateCommaSeparatedDomains(form.get("email")), "E-mails domains must be comma separated value of domains");
+        }
         form.expectValue("ttl", "Ttl muss be a valid integer between 60 and 900 seconds.");
         form.expectNumeric("ttl", "Ttl muss be a valid integer between 60 and 900 seconds.");
         form.expectRangeValue("ttl", 60, 900, "Ttl muss be a valid integer between 60 and 900 seconds.");

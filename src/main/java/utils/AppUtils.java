@@ -34,13 +34,13 @@ public final class AppUtils {
     }
 
     public static boolean validateCommaSeparatedDomains(String input) {
-        String[] domains = input.split("\\s*,\\s*"); // Split on commas and trim whitespace
+        String[] domains = input.split("\\s*,\\s*");
         for (String domain : domains) {
             if (!Const.DOMAIN_PATTERN.matcher(domain).matches()) {
-                return false; // Invalid domain found
+                return false;
             }
         }
-        return true; // All domains valid
+        return true;
     }
 
     public static boolean isValidAppId(String appId) {
