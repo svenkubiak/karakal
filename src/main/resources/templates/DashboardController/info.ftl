@@ -27,10 +27,10 @@
                     <label class="label">App id</label>
                     <div class="dashboard-info-field">
                         <p class="control has-icons-left">
-                            <input class="input" type="text" disabled value="${app.id}">
+                            <input class="input" type="text" disabled value="${app.appId}">
                             <span class="icon is-left"><i class="fas fa-fingerprint"></i></span>
                         </p>
-                        <button type="button" class="copy-btn" aria-label="Copy to clipboard" title="Copy" data-copy-value="${attrEsc(app.id!)}">
+                        <button type="button" class="copy-btn" aria-label="Copy to clipboard" title="Copy" data-copy-value="${attrEsc(app.appId!)}">
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
