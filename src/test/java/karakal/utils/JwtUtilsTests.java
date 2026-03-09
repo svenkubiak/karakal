@@ -1,4 +1,4 @@
-package utils;
+package karakal.utils;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -6,6 +6,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import io.mangoo.exceptions.MangooJwtException;
 import org.junit.jupiter.api.Test;
+import utils.JwtUtils;
 
 import java.security.KeyPair;
 import java.security.interfaces.RSAPrivateKey;

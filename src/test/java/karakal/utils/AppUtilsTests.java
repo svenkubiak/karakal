@@ -1,9 +1,12 @@
-package utils;
+package karakal.utils;
 
 import models.App;
 import org.junit.jupiter.api.Test;
+import utils.AppUtils;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.wildfly.common.Assert.assertFalse;
+import static org.wildfly.common.Assert.assertTrue;
 
 class AppUtilsTests {
     @Test
