@@ -51,7 +51,7 @@ environments:
   test:
     connector:
       http:
-        port: 9090
+        port: 9823
     session:
       cookie:
         secret: vault{}
