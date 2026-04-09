@@ -7,7 +7,7 @@
 	<packaging>jar</packaging>
 	<url>https://github.com/svenkubiak/karakal</url>
 	<properties>
-		<mangooio.version>10.6.0-Beta7</mangooio.version>
+		<mangooio.version>10.6.0</mangooio.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jdk.version>25</jdk.version>
 		<maven.compiler.optimze>true</maven.compiler.optimze>
@@ -194,7 +194,7 @@
 					<dependency>
 						<groupId>org.codehaus.mojo</groupId>
 						<artifactId>extra-enforcer-rules</artifactId>
-						<version>1.11.0</version>
+						<version>1.12.0</version>
 					</dependency>
 				</dependencies>
 			</plugin>
@@ -209,7 +209,7 @@
         <dependency>
             <groupId>com.webauthn4j</groupId>
             <artifactId>webauthn4j-core</artifactId>
-            <version>0.31.1.RELEASE</version>
+            <version>0.31.2.RELEASE</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
