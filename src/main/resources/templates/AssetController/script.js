@@ -172,7 +172,13 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                 options.user.id = base64urlToBuffer(options.user.id);
             }
 
-            const credential = await navigator.credentials.create({publicKey: options});
+            let credential;
+            try {
+                credential = await navigator.credentials.create({publicKey: t});
+            } catch(err) {
+                if (err.name !== "NotAllowedError") renderFragment(error);
+                return;
+            }
 
             const serializedCredential = {
                 id: credential.id,
@@ -234,7 +240,14 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                 options.challenge = base64urlToBuffer(options.challenge);
             }
 
-            const assertion = await navigator.credentials.get({publicKey: options});
+            let assertion;
+            try {
+                assertion = await navigator.credentials.get({publicKey: options});
+            } catch(err) {
+                if (err.name !== "NotAllowedError") renderFragment(error);
+                return;
+            }
+
             const loginCompleteResponse = await fetch('${api}/api/v1/login-complete', {
                 method: 'POST',
                 body: JSON.stringify(assertion),
