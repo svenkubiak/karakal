@@ -13,4 +13,4 @@ RUN chown appuser:appgroup /app/karakal.jar
 
 USER appuser
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/karakal.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/karakal.jar"]
