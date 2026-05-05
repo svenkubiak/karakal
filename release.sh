@@ -1,6 +1,122 @@
 #!/bin/bash
 set -e
 
+BOLD="\033[1m"
+DIM="\033[2m"
+RESET="\033[0m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+RED="\033[31m"
+CYAN="\033[36m"
+BLUE="\033[34m"
+
+TOTAL_STEPS=5
+CURRENT_STEP=0
+
+divider() {
+  echo -e "${DIM}────────────────────────────────────────────────────────────────────────────────${RESET}"
+}
+
+step() {
+  local msg="$1"
+  CURRENT_STEP=$((CURRENT_STEP + 1))
+  echo
+  divider
+  echo -e "  ${BOLD}${CYAN}[${CURRENT_STEP}/${TOTAL_STEPS}]${RESET}  ${BOLD}${msg}${RESET}"
+  divider
+  echo
+}
+
+info() {
+  echo -e "  ${BLUE}→${RESET}  $1"
+}
+
+success() {
+  echo -e "  ${GREEN}✔${RESET}  $1"
+}
+
+error() {
+  echo -e "  ${RED}✖${RESET}  ${RED}$1${RESET}"
+}
+
+warn() {
+  echo -e "  ${YELLOW}⚠${RESET}  ${YELLOW}$1${RESET}"
+}
+
+banner() {
+  echo
+  echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${RESET}"
+  echo -e "${BOLD}${CYAN}║                          🚀  Release Script                                ║${RESET}"
+  echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${RESET}"
+  echo
+}
+
+run_maven() {
+  local description="$1"
+  shift
+  local args=("$@")
+  local tmp_log
+  tmp_log=$(mktemp)
+
+  info "${description} ..."
+
+  if ! mvn "${args[@]}" > "$tmp_log" 2>&1; then
+    echo
+    error "Maven command failed: mvn ${args[*]}"
+    echo
+    echo -e "${DIM}────────────────────── Maven Error Output ──────────────────────${RESET}"
+    grep -E "\[ERROR\]|\[FATAL\]" "$tmp_log" | while IFS= read -r line; do
+      echo -e "  ${RED}${line}${RESET}"
+    done
+    echo -e "${DIM}────────────────────────────────────────────────────────────────${RESET}"
+    echo
+    rm -f "$tmp_log"
+    exit 1
+  fi
+
+  rm -f "$tmp_log"
+}
+
+run_silent() {
+  local description="$1"
+  shift
+  local tmp_log
+  tmp_log=$(mktemp)
+
+  info "${description} ..."
+
+  if ! "$@" > "$tmp_log" 2>&1; then
+    echo
+    error "Command failed: $*"
+    echo
+    echo -e "${DIM}────────────────────── Error Output ────────────────────────────${RESET}"
+    while IFS= read -r line; do
+      echo -e "  ${RED}${line}${RESET}"
+    done < "$tmp_log"
+    echo -e "${DIM}────────────────────────────────────────────────────────────────${RESET}"
+    echo
+    rm -f "$tmp_log"
+    exit 1
+  fi
+
+  rm -f "$tmp_log"
+}
+
+bump_patch() {
+  local ver="$1"
+  IFS=. read -r major minor patch <<<"$ver"
+  patch=$((patch + 1))
+  echo "${major}.${minor}.${patch}"
+}
+
+is_stable_release() {
+  if [[ "$IMAGE_VERSION" =~ [aA]lpha|[bB]eta|[rR][cC] ]]; then
+    return 1
+  else
+    return 0
+  fi
+}
+
 MODE="$1"
 IMAGE_NAME="karakal"
 GHCR_USERNAME="svenkubiak"
@@ -8,119 +124,144 @@ REPO_NAME="karakal"
 GHCR_URL="ghcr.io"
 REPO_URL="https://github.com/$GHCR_USERNAME/$REPO_NAME"
 
-# Check git state ONCE, at script start
-check_clean_git() {
-  git status
-  if ! git diff-index --quiet HEAD --; then
-    echo "There are uncommitted changes in the repository. Please commit or stash them before running this script."
-    exit 1
-  fi
-}
-
-# Official SemVer 2.0.0 regex, single line, bash-friendly
 SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
 
-check_clean_git
+banner
 
-# === Always run Maven build ===
-echo "🔧 Starting Maven build..."
-mvn clean verify
+step "Checking Git state"
 
-if [ $? -ne 0 ]; then
-  echo "❌ Maven build failed! Exiting..."
-  exit 1
+git status --short
+if ! git diff-index --quiet HEAD --; then
+  warn "There are uncommitted changes in the repository. They will be included in the release commit at the end."
 else
-  echo "✅ Maven build succeeded."
+  success "Git working directory is clean."
 fi
+
+step "Running Maven clean + verify"
+
+run_maven "Running mvn clean verify" clean verify
+echo
+success "Maven build succeeded."
 
 # === DEV MODE ===
 if [[ "$MODE" == "dev" ]]; then
-  echo "[Dev Mode] Skipping Maven release/version updates..."
+  TOTAL_STEPS=3
+  step "Building and pushing dev image"
 
   IMAGE_DEV_PATH="$GHCR_URL/$GHCR_USERNAME/$REPO_NAME/$IMAGE_NAME:dev"
 
-  echo "[Karakal] Building :dev image..."
-  docker build --no-cache \
-    --label "org.opencontainers.image.source=$REPO_URL" \
-    -t "$IMAGE_NAME:dev" .
-  docker tag "$IMAGE_NAME:dev" "$IMAGE_DEV_PATH"
-  docker push "$IMAGE_DEV_PATH"
+  warn "Dev mode — skipping Maven release/version updates."
+  echo
 
-  echo "✅ Dev images pushed successfully."
+  run_silent "Building image ${BOLD}${IMAGE_DEV_PATH}${RESET}" \
+    docker build --no-cache \
+      --label "org.opencontainers.image.source=$REPO_URL" \
+      -t "$IMAGE_NAME:dev" .
+
+  run_silent "Tagging image" \
+    docker tag "$IMAGE_NAME:dev" "$IMAGE_DEV_PATH"
+
+  run_silent "Pushing image ${BOLD}${IMAGE_DEV_PATH}${RESET}" \
+    docker push "$IMAGE_DEV_PATH"
+
+  echo
+  success "Dev image pushed successfully."
+  echo
+  divider
+  echo -e "  ${BOLD}${GREEN}🏁  All done!${RESET}  Dev image ${BOLD}${GREEN}${IMAGE_DEV_PATH}${RESET} is live."
+  divider
+  echo
   exit 0
 fi
 
 # === REGULAR RELEASE MODE ===
 
-# 1) Get current version and prompt for new version
+step "Determining release version"
+
 CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-read -rp "Enter new version (current: ${CURRENT_VERSION}): " NEW_VERSION
+DEFAULT_RELEASE_VERSION="${CURRENT_VERSION%-SNAPSHOT}"
 
-# 2) Validate against strict SemVer 2.0.0
+info "Current version  :  ${BOLD}${CURRENT_VERSION}${RESET}"
+echo
+read -rp "  ✏️   Enter new release version [${DEFAULT_RELEASE_VERSION}]: " NEW_VERSION
+NEW_VERSION="${NEW_VERSION:-$DEFAULT_RELEASE_VERSION}"
+echo
+
 if [[ ! "$NEW_VERSION" =~ $SEMVER_REGEX ]]; then
-  echo "Invalid Semantic Version (must follow SemVer 2.0.0): $NEW_VERSION"
+  error "Invalid Semantic Version (must follow SemVer 2.0.0): $NEW_VERSION"
   exit 1
 fi
 
-# 3) Set version (this will make the repo dirty, which is OK now)
-mvn versions:set -DnewVersion="$NEW_VERSION"
-STATUS=$?
+NEXT_DEV_BASE="$(bump_patch "$NEW_VERSION")"
+NEXT_SNAPSHOT_VERSION="${NEXT_DEV_BASE}-SNAPSHOT"
 
-if [ $STATUS -ne 0 ]; then
-    echo "❌ Failed to set new version! Exiting..."
-    exit 1
-fi
+run_maven "Setting version to ${NEW_VERSION}" versions:set -DnewVersion="$NEW_VERSION"
+echo
+success "Release version  :  ${BOLD}${NEW_VERSION}${RESET}"
+info    "Next snapshot    :  ${BOLD}${NEXT_SNAPSHOT_VERSION}${RESET}"
 
-# 4) Rebuild JAR with the new version so the correct version tag ends up in the image  ← NEU
-echo "🔧 Rebuilding JAR with new version $NEW_VERSION..."
-mvn clean package -DskipTests
-if [ $? -ne 0 ]; then
-  echo "❌ Maven rebuild failed! Exiting..."
-  exit 1
-else
-  echo "✅ Maven rebuild succeeded."
-fi
+step "Rebuilding with new version"
+
+run_maven "Running mvn clean package" clean package -DskipTests
+echo
+success "Maven rebuild succeeded."
 
 IMAGE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
 IMAGE_FULL_PATH="$GHCR_URL/$GHCR_USERNAME/$REPO_NAME/$IMAGE_NAME:$IMAGE_VERSION"
 IMAGE_LATEST_PATH="$GHCR_URL/$GHCR_USERNAME/$REPO_NAME/$IMAGE_NAME:latest"
 
-is_stable_release() {
-    if [[ "$IMAGE_VERSION" =~ [aA]lpha|[bB]eta|[rR][cC] ]]; then
-        return 1
-    else
-        return 0
-    fi
-}
+step "Building and pushing Docker images"
 
-echo "[Karakal] Building Version Docker image..."
-docker build --no-cache \
-  --label "org.opencontainers.image.source=$REPO_URL" \
-  -t "$IMAGE_NAME:$IMAGE_VERSION" .
+info "Image version  :  ${BOLD}${IMAGE_VERSION}${RESET}"
+if is_stable_release; then
+  info "Release type   :  ${BOLD}stable${RESET} (latest tag will be pushed)"
+else
+  warn "Release type   :  pre-release (latest tag will be skipped)"
+fi
+echo
+
+run_silent "Building image ${BOLD}${IMAGE_FULL_PATH}${RESET}" \
+  docker build --no-cache \
+    --label "org.opencontainers.image.source=$REPO_URL" \
+    -t "$IMAGE_NAME:$IMAGE_VERSION" .
+success "Docker image built successfully."
+echo
 
 if is_stable_release; then
-    docker tag "$IMAGE_NAME:$IMAGE_VERSION" "$IMAGE_NAME:latest"
+  run_silent "Tagging as latest" docker tag "$IMAGE_NAME:$IMAGE_VERSION" "$IMAGE_NAME:latest"
 fi
 
-docker tag "$IMAGE_NAME:$IMAGE_VERSION" "$IMAGE_FULL_PATH"
+run_silent "Tagging ${BOLD}${IMAGE_FULL_PATH}${RESET}" \
+  docker tag "$IMAGE_NAME:$IMAGE_VERSION" "$IMAGE_FULL_PATH"
+
 if is_stable_release; then
+  run_silent "Tagging ${BOLD}${IMAGE_LATEST_PATH}${RESET}" \
     docker tag "$IMAGE_NAME:latest" "$IMAGE_LATEST_PATH"
 fi
 
-docker push "$IMAGE_FULL_PATH"
+run_silent "Pushing image ${BOLD}${IMAGE_FULL_PATH}${RESET}" docker push "$IMAGE_FULL_PATH"
+
 if is_stable_release; then
-    docker push "$IMAGE_LATEST_PATH"
+  run_silent "Pushing image ${BOLD}${IMAGE_LATEST_PATH}${RESET}" docker push "$IMAGE_LATEST_PATH"
 fi
 
-if [ $? -eq 0 ]; then
-    git tag "$IMAGE_VERSION"
-    mvn release:update-versions
-    git commit -am "Updated version after release"
-    git push --tags origin main
-    echo "🎉 Released $IMAGE_VERSION!"
-else
-    echo "❌ Failed to push the image. Exiting..."
-    exit 1
-fi
+echo
+success "Docker images pushed successfully."
 
+step "Tagging Git and updating versions"
+
+run_silent "Creating Git tag ${IMAGE_VERSION}" git tag "$IMAGE_VERSION"
+run_maven "Setting next snapshot version ${NEXT_SNAPSHOT_VERSION}" versions:set -DnewVersion="${NEXT_SNAPSHOT_VERSION}"
 rm -f pom.xml.versionsBackup
+run_silent "Committing release ${IMAGE_VERSION}" git commit -am "Release ${IMAGE_VERSION}, next dev version ${NEXT_SNAPSHOT_VERSION}"
+run_silent "Pushing to origin main" git push --tags origin main
+echo
+success "Git tag ${BOLD}${IMAGE_VERSION}${RESET} pushed and next dev version set  :  ${BOLD}${NEXT_SNAPSHOT_VERSION}${RESET}"
+
+rm -f pom.xml.versionsBackup || true
+
+echo
+divider
+echo -e "  ${BOLD}${GREEN}🏁  All done!${RESET}  ${BOLD}${IMAGE_NAME}${RESET} version ${BOLD}${GREEN}${IMAGE_VERSION}${RESET} is released and deployed."
+divider
+echo
