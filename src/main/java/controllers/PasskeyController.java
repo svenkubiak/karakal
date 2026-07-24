@@ -66,7 +66,7 @@ public class PasskeyController {
                 jwk.put("n", n);
                 jwk.put("alg", "RS256");
 
-                List<Map<String, Object>> keysList = Collections.singletonList(jwk);
+                List<Map<String, Object>> keysList = List.of(jwk);
 
                 Map<String, Object> jwks = new HashMap<>();
                 jwks.put("keys", keysList);
@@ -105,7 +105,7 @@ public class PasskeyController {
                         challenge,
                         List.of(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256)),
                         60000L,
-                        Collections.emptyList(),
+                        List.of(),
                         authenticatorSelectionCriteria,
                         AttestationConveyancePreference.NONE,
                         null
