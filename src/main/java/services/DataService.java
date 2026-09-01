@@ -12,7 +12,7 @@ import io.mangoo.utils.CommonUtils;
 import jakarta.inject.Inject;
 import models.App;
 import models.User;
-import org.apache.fury.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import utils.AppUtils;
 
 import java.util.List;
