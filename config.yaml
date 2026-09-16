@@ -7,6 +7,8 @@ default:
     url: env{}
     secret: env{}
     registration: env{}
+    parameter:
+      strict: true
   vault:
     enable: false
   connector:
