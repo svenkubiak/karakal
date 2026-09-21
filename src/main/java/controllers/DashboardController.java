@@ -127,10 +127,24 @@ public class DashboardController {
     }
 
 
-    @FilterWith(PasskeyFilter.class)
+    @FilterWith({PasskeyFilter.class, CsrfFilter.class})
     public Response delete(@NotBlank @Pattern(regexp = Const.APP_ID_REGEX) String appId) {
+        App app = dataService.findApp(appId);
+        if (app == null) {
+            return Response.notFound();
+        }
+
+        // Deleting the dashboard application would remove all administrators and the trust anchor
+        // of the admin interface, leaving the instance unreachable until it is restarted
+        if (app.isDashboard()) {
+            LOG.warn("Rejected an attempt to delete the dashboard application");
+            return Response.badRequest();
+        }
+
+        LOG.info("Deleting application {} including all of its users", app.getName());
         dataService.removeUsersFromApp(appId);
         dataService.deleteApp(appId);
+
         return Response.ok();
     }
 
@@ -155,10 +169,19 @@ public class DashboardController {
                 form.expectFalse("name", dataService.appExists(name), "An application with the same name already exists.");
             }
         }
-        form.expectValue("redirect", "Redirect must be a valid URL.");
-        form.expectUrl("redirect", "Redirect must be a valid URL.");
-        form.expectValue("url", "URL must be a valid URL.");
-        form.expectUrl("url", "URL must be a valid URL.");
+        boolean isDashboard = app != null && app.isDashboard();
+
+        // URL, redirect and audience of the dashboard application are derived from karakal.url.
+        // Changing them would either lock out every administrator (rpId/origin of the passkeys,
+        // audience of the token) or turn the login page into an open redirect.
+        if (!isDashboard) {
+            form.expectValue("redirect", "Redirect must be a valid URL.");
+            form.expectUrl("redirect", "Redirect must be a valid URL.");
+            form.expectValue("url", "URL must be a valid URL.");
+            form.expectUrl("url", "URL must be a valid URL.");
+            form.expectValue("audience", "Audience must be a valid host.");
+            form.expectRegex("audience", Const.AUDIENCE_PATTERN, "Audience must be a valid host.");
+        }
         if (StringUtils.isNotBlank(form.get("email"))) {
             form.expectTrue("email", AppUtils.validateCommaSeparatedDomains(form.get("email")), "E-mails domains must be comma separated value of domains");
         }
@@ -171,11 +194,26 @@ public class DashboardController {
                 app = new App(form.get("name"));
             }
 
-            app.setName(form.get("name"));
-            app.setRegistration(form.getBoolean("registration").orElse(Boolean.FALSE));
-            app.setUrl(form.get("url"));
-            app.setRedirect(form.get("redirect"));
-            app.setAudience(form.get("audience"));
+            boolean registration = form.getBoolean("registration").orElse(Boolean.FALSE);
+            if (isDashboard) {
+                String karakalUrl = config.getString("karakal.url");
+                app.setName(Const.DASHBOARD);
+                app.setUrl(karakalUrl);
+                app.setRedirect(karakalUrl + "/dashboard");
+                app.setAudience(AppUtils.getDomain(karakalUrl));
+
+                if (registration && !app.isRegistration()) {
+                    LOG.warn("Registration for the dashboard application was enabled. Anyone matching " +
+                             "the configured e-mail domains can now register as an administrator.");
+                }
+            } else {
+                app.setName(form.get("name"));
+                app.setUrl(form.get("url"));
+                app.setRedirect(form.get("redirect"));
+                app.setAudience(form.get("audience"));
+            }
+
+            app.setRegistration(registration);
             app.setEmail(form.get("email"));
             app.setTtl(form.getLong("ttl").orElse(Const.COOKIE_MAX_AGE));
             dataService.save(app);

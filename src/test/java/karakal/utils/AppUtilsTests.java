@@ -132,6 +132,26 @@ class AppUtilsTests {
         assertFalse(AppUtils.validateCommaSeparatedDomains("example.c"));
     }
 
+    // --- H-11 ------------------------------------------------------------------------------
+
+    @Test
+    void audiencePattern_acceptsHosts() {
+        assertTrue(constants.Const.AUDIENCE_PATTERN.matcher("localhost").matches());
+        assertTrue(constants.Const.AUDIENCE_PATTERN.matcher("api.myapp.com").matches());
+        assertTrue(constants.Const.AUDIENCE_PATTERN.matcher("my-app.example.co.uk").matches());
+    }
+
+    @Test
+    void audiencePattern_rejectsAnythingElse() {
+        assertFalse(constants.Const.AUDIENCE_PATTERN.matcher("https://api.myapp.com").matches());
+        assertFalse(constants.Const.AUDIENCE_PATTERN.matcher("a.de, b.de").matches(),
+                "the backend writes a single audience into the token, a list would be meaningless");
+        assertFalse(constants.Const.AUDIENCE_PATTERN.matcher("-bad.de").matches());
+        assertFalse(constants.Const.AUDIENCE_PATTERN.matcher("bad-.de").matches());
+        assertFalse(constants.Const.AUDIENCE_PATTERN.matcher("").matches());
+        assertFalse(constants.Const.AUDIENCE_PATTERN.matcher("api.myapp.com:8080").matches());
+    }
+
     @Test
     void everySaveableDomainBehavesAsExpectedWhenMatching() {
         // the notation offered by the UI and the matching logic must agree

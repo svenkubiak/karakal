@@ -114,6 +114,12 @@ public class DataService {
 
         App app = findApp(appId);
         if (app != null) {
+            // The dashboard application is the trust anchor of the admin interface and must never
+            // be removed, as that would leave the instance unreachable until it is restarted
+            if (app.isDashboard()) {
+                throw new IllegalArgumentException("The dashboard application can not be deleted");
+            }
+
             datastore.delete(app);
         }
     }

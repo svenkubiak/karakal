@@ -18,7 +18,7 @@
                 <div class="field">
                     <label class="label">Name *</label>
                     <p class="control has-icons-left">
-                        <input class="input <#if (form?? && form.hasError("name"))>is-danger</#if>" type="text" name="name" value="<#if (form?? && form.name??)>${form.name}<#elseif (app.name)??>${app.name}</#if>"
+                        <input class="input <#if (form?? && form.hasError("name"))>is-danger</#if>" type="text" name="name" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.name??)>${form.name}<#elseif (app.name)??>${app.name}</#if>"
                                placeholder="Application name (e.g. MyApp)">
                         <span class="icon is-left"><i class="fas fa-tag"></i></span>
                     </p>
@@ -30,7 +30,7 @@
                 <div class="field">
                     <label class="label">Login redirect *</label>
                     <p class="control has-icons-left">
-                        <input class="input <#if (form?? && form.hasError("redirect"))>is-danger</#if>" type="text" name="redirect" value="<#if (form?? && form.redirect??)>${form.redirect}<#elseif (app.redirect)??>${app.redirect}</#if>"
+                        <input class="input <#if (form?? && form.hasError("redirect"))>is-danger</#if>" type="text" name="redirect" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.redirect??)>${form.redirect}<#elseif (app.redirect)??>${app.redirect}</#if>"
                                placeholder="Login redirect URL (e.g. https://myapp.com/callback)">
                         <span class="icon is-left"><i class="fas fa-share"></i></span>
                     </p>
@@ -42,7 +42,7 @@
                 <div class="field">
                     <label class="label">URL *</label>
                     <p class="control has-icons-left">
-                        <input class="input <#if (form?? && form.hasError("domain"))>is-danger</#if>" type="text" name="url" value="<#if (form?? && form.url??)>${form.url}<#elseif (app.url)??>${app.url}</#if>"
+                        <input class="input <#if (form?? && form.hasError("domain"))>is-danger</#if>" type="text" name="url" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.url??)>${form.url}<#elseif (app.url)??>${app.url}</#if>"
                                placeholder="URL address (e.g. https://myapp.com)">
                         <span class="icon is-left"><i class="fas fa-server"></i></span>
                     </p>
@@ -66,11 +66,11 @@
                 <div class="field">
                     <label class="label">Audience</label>
                     <p class="control has-icons-left">
-                        <input class="input <#if (form?? && form.hasError("audience"))>is-danger</#if>" type="text" name="audience" value="<#if (form?? && form.audience??)>${form.audience}<#elseif (app.audience)??>${app.audience}</#if>"
-                               placeholder="Comma separated list of hosts (e.g. localhost, api.myapp.com)">
+                        <input class="input <#if (form?? && form.hasError("audience"))>is-danger</#if>" type="text" name="audience" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.audience??)>${form.audience}<#elseif (app.audience)??>${app.audience}</#if>"
+                               placeholder="The host of your application (e.g. localhost or api.myapp.com)">
                         <span class="icon is-left"><i class="fas fa-list"></i></span>
                     </p>
-                    <p class="help">The required audience(s) that will be set into the JWT.</p>
+                    <p class="help">The audience that will be set into the JWT.</p>
                     <#if form?? && form.hasError("audience")>
                         <p class="help is-danger">${form.getError("audience")}</p>
                     </#if>

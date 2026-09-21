@@ -39,6 +39,9 @@ public final class Const {
     public static final String STRICT_TRANSPORT_SECURITY = "max-age=31536000; includeSubDomains";
     public static final String NO_STORE = "no-store";
     // Optional leading @, at least one label plus a TLD, sub domains allowed, no leading/trailing hyphen
+    // A single host, with or without sub domains, e.g. localhost or api.myapp.com
+    public static final Pattern AUDIENCE_PATTERN =
+            Pattern.compile("^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$");
     public static final Pattern DOMAIN_PATTERN =
             Pattern.compile("^@?(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+[A-Za-z]{2,63}$");
     private Const() {}

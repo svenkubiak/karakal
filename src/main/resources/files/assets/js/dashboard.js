@@ -3,9 +3,13 @@ document.querySelectorAll('.deleteBtn').forEach(function(button){
         const appId = event.currentTarget.dataset.id;
         const name = event.currentTarget.dataset.name;
         if (confirm('Are you sure you want to delete the app "'+  name + '"? This can not be undone.')) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
             fetch('/dashboard/app/' + appId, {
                 method: 'DELETE',
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': csrfToken ? csrfToken.content : ''
+                },
             })
                 .then(function() {
                     window.location.replace("/dashboard");
