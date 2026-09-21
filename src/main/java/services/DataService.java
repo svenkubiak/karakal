@@ -72,7 +72,7 @@ public class DataService {
                 dashboard = new App(Const.DASHBOARD);
                 dashboard.setAudience(AppUtils.getDomain(karakalUrl));
                 dashboard.setRedirect(karakalUrl + "/dashboard");
-                dashboard.setUrl(karakalUrl);
+                dashboard.setUrl(AppUtils.normalizeOrigin(karakalUrl));
             }
 
             dashboard.setDashboard(true);
@@ -157,12 +157,32 @@ public class DataService {
 
     public App findAppByUrl(String url) {
         Argument.requireNonBlank(url, "url can not be null or blank");
-        Preconditions.checkArgument(AppUtils.isValidUrl(url), "url is not a valid URL");
+
+        String origin = AppUtils.normalizeOrigin(url);
+        if (origin.isEmpty()) {
+            return null;
+        }
 
         return datastore.find(App.class,
                 and(
-                        eq("url", url),
+                        eq("url", origin),
                         ne("dashboard", true)));
+    }
+
+    /**
+     * Normalizes the URL of every application to its serialized origin. Applications stored before
+     * the normalization was introduced may carry a path or a trailing slash, which never matches
+     * the {@code Origin} header of a browser.
+     */
+    public void normalizeAppUrls() {
+        for (App app : findApps()) {
+            String origin = AppUtils.normalizeOrigin(app.getUrl());
+            if (!origin.isEmpty() && !origin.equals(app.getUrl())) {
+                LOG.info("Normalizing url of application {} from {} to {}", app.getName(), app.getUrl(), origin);
+                app.setUrl(origin);
+                datastore.save(app);
+            }
+        }
     }
 
     /**

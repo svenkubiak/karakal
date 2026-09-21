@@ -198,7 +198,7 @@ public class DashboardController {
             if (isDashboard) {
                 String karakalUrl = config.getString("karakal.url");
                 app.setName(Const.DASHBOARD);
-                app.setUrl(karakalUrl);
+                app.setUrl(AppUtils.normalizeOrigin(karakalUrl));
                 app.setRedirect(karakalUrl + "/dashboard");
                 app.setAudience(AppUtils.getDomain(karakalUrl));
 
@@ -208,7 +208,8 @@ public class DashboardController {
                 }
             } else {
                 app.setName(form.get("name"));
-                app.setUrl(form.get("url"));
+                // stored as a serialized origin, so it can be compared to the Origin header
+                app.setUrl(AppUtils.normalizeOrigin(form.get("url")));
                 app.setRedirect(form.get("redirect"));
                 app.setAudience(form.get("audience"));
             }

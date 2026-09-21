@@ -282,6 +282,39 @@ class DataServiceTests {
         verify(datastore, never()).find(any(), any());
     }
 
+    // --- H-10 ------------------------------------------------------------------------------
+
+    @Test
+    void findAppByUrl_normalizesTheGivenOrigin() {
+        dataService.findAppByUrl("https://app.example.com/some/path");
+
+        ArgumentCaptor<Bson> filter = ArgumentCaptor.forClass(Bson.class);
+        verify(datastore).find(eq(App.class), filter.capture());
+
+        assertTrue(json(filter.getValue()).contains("\"url\": \"https://app.example.com\""), json(filter.getValue()));
+    }
+
+    @Test
+    void findAppByUrl_returnsNothingForAnInvalidOrigin() {
+        assertNull(dataService.findAppByUrl("null"));
+        verify(datastore, never()).find(any(), any());
+    }
+
+    @Test
+    void normalizeAppUrls_migratesOnlyWhatIsNotNormalized() {
+        App normalized = app("Normalized", false);
+        normalized.setUrl("https://a.example.com");
+        App legacy = app("Legacy", false);
+        legacy.setUrl("https://b.example.com/callback/");
+        when(datastore.findAll(eq(App.class), any(Bson.class))).thenReturn(List.of(normalized, legacy));
+
+        dataService.normalizeAppUrls();
+
+        assertEquals("https://b.example.com", legacy.getUrl());
+        verify(datastore).save(legacy);
+        verify(datastore, never()).save(normalized);
+    }
+
     // --- H-04 ------------------------------------------------------------------------------
 
     @Test

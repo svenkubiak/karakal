@@ -132,6 +132,43 @@ class AppUtilsTests {
         assertFalse(AppUtils.validateCommaSeparatedDomains("example.c"));
     }
 
+    // --- H-10 ------------------------------------------------------------------------------
+
+    @Test
+    void normalizeOrigin_stripsPathAndTrailingSlash() {
+        assertEquals("https://app.example.com", AppUtils.normalizeOrigin("https://app.example.com"));
+        assertEquals("https://app.example.com", AppUtils.normalizeOrigin("https://app.example.com/"));
+        assertEquals("https://app.example.com", AppUtils.normalizeOrigin("https://app.example.com/login?a=1"));
+    }
+
+    @Test
+    void normalizeOrigin_stripsDefaultPortsButKeepsOthers() {
+        assertEquals("https://app.example.com", AppUtils.normalizeOrigin("https://app.example.com:443/"));
+        assertEquals("http://app.example.com", AppUtils.normalizeOrigin("http://app.example.com:80"));
+        assertEquals("https://app.example.com:8443", AppUtils.normalizeOrigin("https://app.example.com:8443/x"));
+        assertEquals("http://localhost:9090", AppUtils.normalizeOrigin("http://localhost:9090/"));
+    }
+
+    @Test
+    void normalizeOrigin_lowercasesSchemeAndHost() {
+        assertEquals("https://app.example.com", AppUtils.normalizeOrigin("HTTPS://APP.Example.COM"));
+    }
+
+    @Test
+    void normalizeOrigin_returnsEmptyForAnythingThatIsNotAnOrigin() {
+        assertEquals("", AppUtils.normalizeOrigin("null"));
+        assertEquals("", AppUtils.normalizeOrigin(""));
+        assertEquals("", AppUtils.normalizeOrigin(null));
+        assertEquals("", AppUtils.normalizeOrigin("not a url"));
+        assertEquals("", AppUtils.normalizeOrigin("/relative/path"));
+    }
+
+    @Test
+    void normalizeOrigin_isStableWhenAppliedTwice() {
+        String once = AppUtils.normalizeOrigin("https://app.example.com/login");
+        assertEquals(once, AppUtils.normalizeOrigin(once));
+    }
+
     // --- H-11 ------------------------------------------------------------------------------
 
     @Test

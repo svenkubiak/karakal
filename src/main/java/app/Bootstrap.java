@@ -98,6 +98,7 @@ public class Bootstrap implements MangooBootstrap {
     @Override
     public void applicationStarted() {
         dataService.init();
+        dataService.normalizeAppUrls();
         dataService.indexify();
         dataService.generateNonce();
         dataService.markApplicationStarted();

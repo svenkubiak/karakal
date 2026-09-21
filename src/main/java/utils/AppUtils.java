@@ -25,6 +25,49 @@ public final class AppUtils {
         return "";
     }
 
+    /**
+     * Normalizes a URL to its serialized origin, i.e. scheme, host and a non default port.
+     *
+     * <p>The {@code Origin} header of a browser never carries a path or a trailing slash, and the
+     * value of {@code Access-Control-Allow-Origin} must be a serialized origin as well. Stored
+     * application URLs are therefore normalized, otherwise a stored
+     * {@code https://app.example.com/} would never match the origin {@code https://app.example.com}
+     * and would additionally produce an invalid CORS header.</p>
+     *
+     * @return the normalized origin or an empty string if the given value is not a valid URL
+     */
+    public static String normalizeOrigin(String url) {
+        if (url == null || url.isBlank()) {
+            return "";
+        }
+
+        try {
+            URI uri = URI.create(url.trim());
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+
+            if (scheme == null || host == null) {
+                return "";
+            }
+
+            scheme = scheme.toLowerCase(Locale.ROOT);
+            var origin = new StringBuilder(scheme).append("://").append(host.toLowerCase(Locale.ROOT));
+
+            int port = uri.getPort();
+            if (port != -1 && !isDefaultPort(scheme, port)) {
+                origin.append(':').append(port);
+            }
+
+            return origin.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private static boolean isDefaultPort(String scheme, int port) {
+        return ("http".equals(scheme) && port == 80) || ("https".equals(scheme) && port == 443);
+    }
+
     public static boolean isValidUrl(String url) {
         try {
             URI.create(url).toURL();

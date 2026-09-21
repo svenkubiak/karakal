@@ -20,4 +20,8 @@ COPY --chown=appuser:appgroup target/karakal.jar ./karakal.jar
 
 USER appuser
 
-ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS:-} -jar /app/karakal.jar"]
+# The configuration file is passed after JAVA_OPTS and in its own quoted variable, so that it can
+# not be overridden through JAVA_OPTS (later -D options win) and is not subject to word splitting
+ENV KARAKAL_CONFIG=/app/config/config.yaml
+
+ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS:-} -Dapplication.config=\"${KARAKAL_CONFIG}\" -jar /app/karakal.jar"]

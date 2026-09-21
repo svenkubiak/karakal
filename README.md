@@ -35,8 +35,14 @@ cd karakal
 2. **Download and execute the installation script:**
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/svenkubiak/karakal/refs/heads/main/install.sh | bash
+curl -fsSL --proto '=https' --tlsv1.2 -O https://raw.githubusercontent.com/svenkubiak/karakal/refs/heads/main/install.sh
+less install.sh   # review before running
+bash install.sh
 ```
+
+> 🔒 Piping a remote script straight into a shell (`curl ... | bash`) executes whatever the endpoint returns, without any chance to review it. Download, review, then run. To pin the downloaded `config.yaml` and `compose.yaml` to a released tag instead of `main`, set `KARAKAL_VERSION`, e.g. `KARAKAL_VERSION=1.1.26 bash install.sh`.
+>
+> The generated `.env` and `config/config.yaml` contain all application secrets and are created with mode `600`.
 
 3. **After installation is complete, open the `.env` file and set your custom configuration:**
 

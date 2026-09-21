@@ -21,6 +21,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import models.App;
 import models.Credential;
 import models.User;
 import org.apache.commons.lang3.StringUtils;
@@ -95,7 +96,8 @@ public class PasskeyController {
 
     public Response registerInit(@NotNull @NotEmpty Map<String, String> data, Request request) {
         var app = dataService.findApp(data.get("appId"));
-        if (app != null && dataService.isRegistrationAllowed(app) && dataService.isValidNonce(app, request)) {
+        if (app != null && isAllowedOrigin(app, request) &&
+            dataService.isRegistrationAllowed(app) && dataService.isValidNonce(app, request)) {
             String username = data.get("username");
             var user = dataService.findUser(username, app.getAppId());
 
@@ -124,8 +126,7 @@ public class PasskeyController {
                         null
                 );
 
-                return Response.ok()
-                        .header("Access-Control-Allow-Origin", app.getUrl())
+                return cors(Response.ok(), app)
                         .header("Access-Control-Expose-Headers", Const.FLOW_ID_HEADER)
                         .header(Const.FLOW_ID_HEADER, flowId)
                         .bodyJson(options);
@@ -140,10 +141,9 @@ public class PasskeyController {
         if (StringUtils.isNotBlank(origin)) {
             var app = dataService.findAppByUrl(origin);
             if (app != null) {
-                return Response.ok()
-                        .header("Vary", "Origin")
-                        .header("Access-Control-Allow-Origin", app.getUrl())
+                return cors(Response.ok(), app)
                         .header("Access-Control-Allow-Methods", "POST, OPTIONS")
+                        .header("Access-Control-Max-Age", "600")
                         .header("Access-Control-Allow-Headers", "Content-Type, karakal-username, karakal-app-id, karakal-nonce, " + Const.FLOW_ID_HEADER);
             }
         }
@@ -162,6 +162,7 @@ public class PasskeyController {
             }
 
             if (app != null &&
+                isAllowedOrigin(app, request) &&
                 dataService.isRegistrationAllowed(app) &&
                 user == null &&
                 StringUtils.isNotBlank(body) &&
@@ -223,8 +224,7 @@ public class PasskeyController {
                         dataService.save(app);
                     }
 
-                    return Response.ok()
-                            .header("Access-Control-Allow-Origin", app.getUrl());
+                    return cors(Response.ok(), app);
                 }
             } else {
                 return Response.notFound();
@@ -246,7 +246,8 @@ public class PasskeyController {
         }
 
         var user = dataService.findUser(username, app.getAppId());
-        if (user != null && AppUtils.isAllowedDomain(app, username) && dataService.isValidNonce(app, request)) {
+        if (user != null && isAllowedOrigin(app, request) &&
+            AppUtils.isAllowedDomain(app, username) && dataService.isValidNonce(app, request)) {
             Map<String, Object> allowCredential = new HashMap<>();
             allowCredential.put("type", "public-key");
             allowCredential.put("id", CommonUtils.urlEncodeWithoutPaddingToBase64(user.getCredentialId()));
@@ -262,8 +263,7 @@ public class PasskeyController {
             response.put("allowCredentials", List.of(allowCredential));
             response.put("userVerification", "required");
 
-            return Response.ok()
-                    .header("Access-Control-Allow-Origin", app.getUrl())
+            return cors(Response.ok(), app)
                     .header("Access-Control-Expose-Headers", Const.FLOW_ID_HEADER)
                     .header(Const.FLOW_ID_HEADER, flowId)
                     .bodyJson(response);
@@ -280,7 +280,8 @@ public class PasskeyController {
         }
 
         String body = request.getBody();
-        if (user != null && StringUtils.isNotBlank(body) && dataService.isValidNonce(app, request)) {
+        if (user != null && isAllowedOrigin(app, request) &&
+            StringUtils.isNotBlank(body) && dataService.isValidNonce(app, request)) {
             var manager = WebAuthnManager.createNonStrictWebAuthnManager();
             AuthenticationData authData = manager.parseAuthenticationResponseJSON(body);
 
@@ -356,8 +357,7 @@ public class PasskeyController {
 
                 dataService.save(user);
 
-                return Response.ok()
-                        .header("Access-Control-Allow-Origin", app.getUrl())
+                return cors(Response.ok(), app)
                         .bodyJson(Map.of(
                                 "jwt", jwt,
                                 "name", Const.COOKIE_NAME,
@@ -381,6 +381,38 @@ public class PasskeyController {
      * is an X.509 encoded EC public key. The AAGUID is not used during authentication and is
      * therefore zeroed in that case.</p>
      */
+    /**
+     * Adds the CORS and caching headers of an application to a given response.
+     *
+     * <p>{@code Vary: Origin} is required because the value of {@code Access-Control-Allow-Origin}
+     * differs per application, {@code Cache-Control: no-store} because these responses carry
+     * challenges and tokens.</p>
+     */
+    private static Response cors(Response response, App app) {
+        return response
+                .header("Access-Control-Allow-Origin", app.getUrl())
+                .header("Vary", "Origin")
+                .header("Cache-Control", Const.NO_STORE);
+    }
+
+    /**
+     * Checks that a request originates from the application it claims to belong to.
+     *
+     * <p>The application is derived from the request body respectively a request header, both of
+     * which are under the control of the caller. A request without an {@code Origin} header is
+     * accepted, as it can not be a browser based cross origin request in the first place.</p>
+     */
+    private static boolean isAllowedOrigin(App app, Request request) {
+        String origin = request.getHeader("Origin");
+        if (StringUtils.isBlank(origin)) {
+            return true;
+        }
+
+        String normalized = AppUtils.normalizeOrigin(origin);
+
+        return StringUtils.isNotBlank(normalized) && normalized.equals(AppUtils.normalizeOrigin(app.getUrl()));
+    }
+
     static RegistrationParameters registrationParameters(ServerProperty serverProperty) {
         return new RegistrationParameters(
                 serverProperty,
