@@ -27,6 +27,7 @@ public class App extends Entity {
     private String email;
     private long ttl;
     private boolean dashboard;
+    private String nonce;
 
     public App() {}
 
@@ -34,6 +35,7 @@ public class App extends Entity {
         Argument.requireNonBlank(name, "name can not be null or empty");
 
         this.appId = CommonUtils.randomString(32);
+        this.nonce = CommonUtils.randomString(32);
         this.name = name;
         this.registration = true;
         this.ttl = Const.COOKIE_MAX_AGE;
@@ -117,6 +119,14 @@ public class App extends Entity {
     }
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getNonce() {
+        return nonce;
+    }
+
+    public void setNonce(String nonce) {
+        this.nonce = nonce;
     }
 
     public boolean isDashboard() {

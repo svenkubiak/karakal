@@ -3,7 +3,6 @@ package services;
 import com.google.common.base.Preconditions;
 import com.mongodb.client.model.*;
 import constants.Const;
-import io.mangoo.cache.Cache;
 import io.mangoo.core.Config;
 import io.mangoo.persistence.interfaces.Datastore;
 import io.mangoo.routing.bindings.Request;
@@ -15,6 +14,8 @@ import models.User;
 import org.apache.commons.lang3.StringUtils;
 import utils.AppUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -24,13 +25,11 @@ import static com.mongodb.client.model.Filters.*;
 public class DataService {
     private final Datastore datastore;
     private final Config config;
-    private final Cache cache;
 
     @Inject
-    public DataService(Datastore datastore, Config config, Cache cache) {
+    public DataService(Datastore datastore, Config config) {
         this.datastore = Objects.requireNonNull(datastore, "datastore can not be null");
         this.config = Objects.requireNonNull(config, "config can not be null");
-        this.cache = Objects.requireNonNull(cache, "cache can not be null");
     }
 
     public void init() {
@@ -127,11 +126,29 @@ public class DataService {
                         ne("dashboard", true)));
     }
 
+    /**
+     * Makes sure that every application has a nonce. Applications created before the nonce
+     * was persisted are migrated on application start.
+     */
     public void generateNonce() {
         List<App> apps = findApps();
         for (App app : apps) {
-            cache.put("nonce-" + app.getAppId(), CommonUtils.randomString(32));
+            getNonce(app);
         }
+    }
+
+    /**
+     * Returns the nonce of a given application, creating and persisting one if required
+     */
+    public String getNonce(App app) {
+        Objects.requireNonNull(app, "app can not be null");
+
+        if (StringUtils.isBlank(app.getNonce())) {
+            app.setNonce(CommonUtils.randomString(32));
+            datastore.save(app);
+        }
+
+        return app.getNonce();
     }
 
     public boolean isValidNonce(App app, Request request) {
@@ -140,6 +157,8 @@ public class DataService {
 
         String nonce = request.getHeader("karakal-nonce");
         return StringUtils.isNotBlank(nonce) &&
-               nonce.equals(cache.get("nonce-" + app.getAppId()));
+               MessageDigest.isEqual(
+                       nonce.getBytes(StandardCharsets.UTF_8),
+                       getNonce(app).getBytes(StandardCharsets.UTF_8));
     }
 }
