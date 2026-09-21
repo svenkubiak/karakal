@@ -71,6 +71,7 @@ public class PasskeyController {
 
 
                 Map<String, Object> jwk = new HashMap<>();
+                jwk.put("kid", JwtUtils.thumbprint(publicKey));
                 jwk.put("use", "sig");
                 jwk.put("kty", "RSA");
                 jwk.put("e", e);
@@ -321,6 +322,7 @@ public class PasskeyController {
 
             var jwtData = JwtUtils.jwtData()
                     .withJwtID(CommonUtils.randomString(32))
+                    .withKeyId(JwtUtils.thumbprint(JwtUtils.fromBase64Public(app.getPublicKey())))
                     .withAudience(app.getAudience())
                     .withIssuer(config.getString("karakal.url"))
                     .withSubject(user.getUsername())

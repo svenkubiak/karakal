@@ -1,50 +1,33 @@
 package filters;
 
-import com.nimbusds.jose.crypto.RSASSAVerifier;
-import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import constants.Const;
-import io.mangoo.cache.Cache;
 import io.mangoo.interfaces.filters.PerRequestFilter;
 import io.mangoo.routing.Response;
 import io.mangoo.routing.bindings.Request;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import models.App;
+import models.User;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import services.DataService;
 import utils.AppUtils;
+import utils.JwtUtils;
 
-import java.net.URI;
-import java.util.Date;
+import java.time.Instant;
 import java.util.Objects;
 
 public class PasskeyFilter implements PerRequestFilter {
     private static final Logger LOG = LogManager.getLogger(PasskeyFilter.class);
-    private static final String PUBLIC_KEY = "karakal-dashboard-public-key";
-    private final Cache cache;
     private final String url;
     private final DataService dataService;
 
     @Inject
-    public PasskeyFilter(Cache cache, @Named("karakal.url") String url, DataService dataService) {
-        this.cache = Objects.requireNonNull(cache, "cache can not be null");
+    public PasskeyFilter(@Named("karakal.url") String url, DataService dataService) {
         this.url = Objects.requireNonNull(url, "url can not be null");
         this.dataService = Objects.requireNonNull(dataService, "dataService can not be null");
-    }
-
-    private String getJwksUrl() {
-        App dashboard = dataService.findDashboard();
-        if (dashboard == null) {
-            throw new IllegalStateException("No dashboard application found");
-        }
-
-        return url + "/api/v1/app/" + dashboard.getAppId() + "/jwks.json";
     }
 
     @Override
@@ -68,46 +51,40 @@ public class PasskeyFilter implements PerRequestFilter {
     private void validateJwt(String jwt) throws Exception {
         Objects.requireNonNull(jwt, "JWT can not be null");
 
-        SignedJWT signedJWT = SignedJWT.parse(jwt);
-        RSASSAVerifier verifier = new RSASSAVerifier(getPublicKey());
+        App dashboard = dataService.findDashboard();
+        if (dashboard == null) {
+            throw new IllegalStateException("No dashboard application found");
+        }
 
-        boolean isValid = signedJWT.verify(verifier);
-        if (isValid) {
-            JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
-            Date expirationTime = claims.getExpirationTime();
+        // The public key is read directly from the database. It used to be fetched over HTTP from
+        // the own public JWKS endpoint, which made the reverse proxy and the name resolution part
+        // of the trust anchor of the admin interface.
+        JWTClaimsSet claims = JwtUtils.verify(
+                jwt,
+                JwtUtils.fromBase64Public(dashboard.getPublicKey()),
+                url,
+                AppUtils.getDomain(url));
 
-            if (expirationTime == null) {
-                throw new Exception("Token does not have expiration time!");
-            }
-            if (new Date().after(expirationTime)) {
-                throw new Exception("Token has expired!");
-            }
+        // A valid signature is not sufficient, the subject must still be a user of the dashboard
+        // application. Otherwise a deleted administrator would keep full access until the token
+        // expires.
+        User user = dataService.findUser(claims.getSubject(), dashboard.getAppId());
+        if (user == null) {
+            throw new Exception("Subject is not a user of the dashboard application");
+        }
 
-            if (!claims.getIssuer().equals(url)) {
-                throw new Exception("Invalid issuer");
-            }
-            if (!claims.getAudience().contains(AppUtils.getDomain(url))) {
-                throw new Exception("Invalid audience");
-            }
-        } else {
-            throw new Exception("Invalid JWT");
+        if (isInvalidated(user, claims)) {
+            throw new Exception("Token was invalidated by a logout");
         }
     }
 
-    private RSAKey getPublicKey() {
-        return cache.get(PUBLIC_KEY, v -> {
-            try {
-                JWKSet jwkSet = JWKSet.load(URI.create(getJwksUrl()).toURL());
-                JWK jwk = jwkSet.getKeys().getFirst();
+    private boolean isInvalidated(User user, JWTClaimsSet claims) {
+        Instant invalidBefore = user.getInvalidBefore();
+        if (invalidBefore == null) {
+            return false;
+        }
 
-                if (jwk instanceof RSAKey rsaJwk) {
-                    return rsaJwk;
-                }
-            } catch (Exception e) {
-                LOG.error("Failed to get public key", e);
-            }
-
-            return null;
-        });
+        var issuedAt = claims.getIssueTime();
+        return issuedAt == null || issuedAt.toInstant().isBefore(invalidBefore);
     }
 }

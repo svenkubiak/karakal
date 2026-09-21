@@ -13,17 +13,23 @@ import io.undertow.server.handlers.CookieImpl;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import io.mangoo.routing.bindings.Request;
 import models.App;
+import models.User;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import services.DataService;
 import utils.AppUtils;
+import utils.JwtUtils;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
 public class DashboardController {
-
+    private static final Logger LOG = LogManager.getLogger(DashboardController.class);
     private final DataService dataService;
     private final Config config;
 
@@ -40,8 +46,10 @@ public class DashboardController {
                 .render("appId", dashboard.getAppId());
     }
 
-    public Response logout(Session session) {
+    public Response logout(Session session, Request request) {
         session.clear();
+        invalidateToken(request);
+
         Cookie cookie = new CookieImpl(Const.COOKIE_NAME)
                 .setPath("/")
                 .setSecure(true)
@@ -53,6 +61,37 @@ public class DashboardController {
         return Response.redirect("/dashboard/login")
                 .cookie(cookie)
                 .header("Clear-Site-Data", "*");
+    }
+
+    /**
+     * Invalidates all tokens of the user the given request is authenticated with. Deleting the
+     * cookie alone would leave a copied token valid until it expires.
+     */
+    private void invalidateToken(Request request) {
+        var cookie = request.getCookie(Const.COOKIE_NAME);
+        if (cookie == null || StringUtils.isBlank(cookie.getValue())) {
+            return;
+        }
+
+        try {
+            App dashboard = dataService.findDashboard();
+            String url = config.getString("karakal.url");
+
+            var claims = JwtUtils.verify(
+                    cookie.getValue(),
+                    JwtUtils.fromBase64Public(dashboard.getPublicKey()),
+                    url,
+                    AppUtils.getDomain(url));
+
+            User user = dataService.findUser(claims.getSubject(), dashboard.getAppId());
+            if (user != null) {
+                user.setInvalidBefore(Instant.now());
+                dataService.save(user);
+            }
+        } catch (Exception e) {
+            // An invalid or expired token can not be invalidated, the cookie is dropped either way
+            LOG.info("Could not invalidate token on logout", e);
+        }
     }
 
     @FilterWith(PasskeyFilter.class)

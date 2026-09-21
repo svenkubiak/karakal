@@ -44,6 +44,13 @@ public class DataService {
     public void markApplicationStarted() {
         applicationStartedAt = Instant.now();
 
+        String karakalUrl = config.getString("karakal.url");
+        if (karakalUrl != null && !karakalUrl.toLowerCase(java.util.Locale.ROOT).startsWith("https://")) {
+            LOG.warn("karakal.url is not using https ({}). Cookies with the __Host- prefix and " +
+                     "Strict-Transport-Security require a secure context, so authentication will " +
+                     "not work outside of local development.", karakalUrl);
+        }
+
         App dashboard = findDashboard();
         if (dashboard != null && dashboard.isRegistration() && !hasUsers(dashboard)) {
             LOG.warn("No administrator registered yet. Registration of the first administrator is " +

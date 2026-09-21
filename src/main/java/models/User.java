@@ -5,6 +5,7 @@ import io.mangoo.annotations.Indexed;
 import io.mangoo.persistence.Entity;
 import io.mangoo.utils.Argument;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Collection(name = "users")
@@ -23,6 +24,7 @@ public class User extends Entity {
     private Boolean uvInitialized;
     private Boolean backupEligible;
     private Boolean backedUp;
+    private Instant invalidBefore;
     private LocalDateTime createdAt;
 
     public User() {}
@@ -70,6 +72,18 @@ public class User extends Entity {
 
     public void setBackedUp(Boolean backedUp) {
         this.backedUp = backedUp;
+    }
+
+    /**
+     * Tokens issued before this point in time are rejected, which is how a logout invalidates
+     * existing tokens across all instances
+     */
+    public Instant getInvalidBefore() {
+        return invalidBefore;
+    }
+
+    public void setInvalidBefore(Instant invalidBefore) {
+        this.invalidBefore = invalidBefore;
     }
 
     public LocalDateTime getCreatedAt() {
