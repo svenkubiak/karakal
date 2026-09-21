@@ -19,6 +19,9 @@ public class User extends Entity {
 
     private byte[] publicKeyCose;
     private long signCount;
+    private Boolean uvInitialized;
+    private Boolean backupEligible;
+    private Boolean backedUp;
     private LocalDateTime createdAt;
 
     public User() {}
@@ -42,6 +45,30 @@ public class User extends Entity {
 
     public void setSignCount(long signCount) {
         this.signCount = signCount;
+    }
+
+    public Boolean getUvInitialized() {
+        return uvInitialized;
+    }
+
+    public void setUvInitialized(Boolean uvInitialized) {
+        this.uvInitialized = uvInitialized;
+    }
+
+    public Boolean getBackupEligible() {
+        return backupEligible;
+    }
+
+    public void setBackupEligible(Boolean backupEligible) {
+        this.backupEligible = backupEligible;
+    }
+
+    public Boolean getBackedUp() {
+        return backedUp;
+    }
+
+    public void setBackedUp(Boolean backedUp) {
+        this.backedUp = backedUp;
     }
 
     public LocalDateTime getCreatedAt() {

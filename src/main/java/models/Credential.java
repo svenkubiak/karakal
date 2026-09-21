@@ -9,42 +9,72 @@ import org.jetbrains.annotations.Nullable;
 public class Credential implements CredentialRecord {
     private final byte[] credentialId;
     private final byte[] credentialPublicKey;
-    private final long signCount;
     private final AttestedCredentialData attestedCredentialData;
+    private long counter;
+    private Boolean uvInitialized;
+    private Boolean backupEligible;
+    private Boolean backedUp;
 
     public Credential(byte[] credentialId, byte[] credentialPublicKey, long signCount, AttestedCredentialData attestedCredentialData) {
+        this(credentialId, credentialPublicKey, signCount, attestedCredentialData, null, null, null);
+    }
+
+    public Credential(byte[] credentialId,
+                      byte[] credentialPublicKey,
+                      long signCount,
+                      AttestedCredentialData attestedCredentialData,
+                      Boolean uvInitialized,
+                      Boolean backupEligible,
+                      Boolean backedUp) {
         this.credentialId = credentialId;
         this.credentialPublicKey = credentialPublicKey;
-        this.signCount = signCount;
+        this.counter = signCount;
         this.attestedCredentialData = attestedCredentialData;
+        this.uvInitialized = uvInitialized;
+        this.backupEligible = backupEligible;
+        this.backedUp = backedUp;
+    }
+
+    public byte[] getCredentialId() {
+        return credentialId;
+    }
+
+    public byte[] getCredentialPublicKey() {
+        return credentialPublicKey;
     }
 
     @Nullable
     @Override
     public Boolean isUvInitialized() {
-        return null;
+        return uvInitialized;
     }
 
     @Override
-    public void setUvInitialized(boolean b) {}
+    public void setUvInitialized(boolean uvInitialized) {
+        this.uvInitialized = uvInitialized;
+    }
 
     @Nullable
     @Override
     public Boolean isBackupEligible() {
-        return null;
+        return backupEligible;
     }
 
     @Override
-    public void setBackupEligible(boolean b) {}
+    public void setBackupEligible(boolean backupEligible) {
+        this.backupEligible = backupEligible;
+    }
 
     @Nullable
     @Override
     public Boolean isBackedUp() {
-        return null;
+        return backedUp;
     }
 
     @Override
-    public void setBackedUp(boolean b) {    }
+    public void setBackedUp(boolean backedUp) {
+        this.backedUp = backedUp;
+    }
 
     @Override
     public @Nullable CollectedClientData getClientData() {
@@ -59,9 +89,11 @@ public class Credential implements CredentialRecord {
 
     @Override
     public long getCounter() {
-        return 0;
+        return counter;
     }
 
     @Override
-    public void setCounter(long l) {}
+    public void setCounter(long counter) {
+        this.counter = counter;
+    }
 }

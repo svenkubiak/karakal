@@ -6,7 +6,7 @@ import com.webauthn4j.data.attestation.authenticator.*;
 import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
 import com.webauthn4j.data.client.Origin;
 import com.webauthn4j.data.client.challenge.DefaultChallenge;
-import com.webauthn4j.data.extension.authenticator.AuthenticationExtensionAuthenticatorOutput;
+import com.webauthn4j.data.extension.authenticator.RegistrationExtensionAuthenticatorOutput;
 import com.webauthn4j.server.ServerProperty;
 import constants.Const;
 import io.mangoo.core.Config;
@@ -182,25 +182,25 @@ public class PasskeyController {
                 webAuthnManager.verify(registrationData, registrationParameters);
 
                 AttestedCredentialData attestedCredentialData = null;
+                AuthenticatorData<RegistrationExtensionAuthenticatorOutput> registrationAuthenticatorData = null;
                 var attestationObject = registrationData.getAttestationObject();
                 if (attestationObject != null) {
-                    attestedCredentialData = attestationObject.getAuthenticatorData().getAttestedCredentialData();
+                    registrationAuthenticatorData = attestationObject.getAuthenticatorData();
+                    attestedCredentialData = registrationAuthenticatorData.getAttestedCredentialData();
                 }
 
                 if (attestedCredentialData != null && attestedCredentialData.getCOSEKey().getPublicKey() != null) {
                     byte[] credentialId = attestedCredentialData.getCredentialId();
                     byte[] publicKeyCose = attestedCredentialData.getCOSEKey().getPublicKey().getEncoded();
 
-                    long signCount = registrationData
-                            .getAttestationObject()
-                            .getAuthenticatorData()
-                            .getSignCount();
-
                     user = new User(username);
                     user.setAppId(app.getAppId());
                     user.setCredentialId(credentialId);
                     user.setPublicKeyCose(publicKeyCose);
-                    user.setSignCount(signCount);
+                    user.setSignCount(registrationAuthenticatorData.getSignCount());
+                    user.setUvInitialized(registrationAuthenticatorData.isFlagUV());
+                    user.setBackupEligible(registrationAuthenticatorData.isFlagBE());
+                    user.setBackedUp(registrationAuthenticatorData.isFlagBS());
                     user.setAttestedCredentialData(JsonUtils.toJson(attestedCredentialData));
                     user.setCoseKey(JsonUtils.toJson(attestedCredentialData.getCOSEKey()));
 
@@ -298,7 +298,14 @@ public class PasskeyController {
                     coseKey
             );
 
-            var credential = new Credential(user.getCredentialId(), user.getPublicKeyCose(), user.getSignCount(), attestedCredentialData);
+            var credential = new Credential(
+                    user.getCredentialId(),
+                    user.getPublicKeyCose(),
+                    user.getSignCount(),
+                    attestedCredentialData,
+                    user.getUvInitialized(),
+                    user.getBackupEligible(),
+                    user.getBackedUp());
             var params = new AuthenticationParameters(
                     serverProperty,
                     credential,
@@ -325,11 +332,14 @@ public class PasskeyController {
                     dataService.save(app);
                 }
 
-                AuthenticatorData<AuthenticationExtensionAuthenticatorOutput> authenticatorData = authData.getAuthenticatorData();
-                if (authenticatorData != null) {
-                    user.setSignCount(authenticatorData.getSignCount());
-                    dataService.save(user);
-                }
+                // The verifier updates the credential record (sign count, UV and backup state)
+                // as part of a successful verification, see AuthenticationDataVerifier#updateRecord.
+                // Backup eligibility is immutable for the lifetime of a credential and is therefore
+                // never overwritten here.
+                user.setSignCount(credential.getCounter());
+                user.setUvInitialized(credential.isUvInitialized());
+                user.setBackedUp(credential.isBackedUp());
+                dataService.save(user);
 
                 return Response.ok()
                         .header("Access-Control-Allow-Origin", app.getUrl())
