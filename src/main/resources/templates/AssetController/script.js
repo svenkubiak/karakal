@@ -160,6 +160,7 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
         });
 
         if (registerInitResponse.ok) {
+            const flowId = registerInitResponse.headers.get('karakal-flow-id') || "";
             const options = await registerInitResponse.json();
 
             if (typeof options.challenge === "object" && options.challenge !== null && 'value' in options.challenge) {
@@ -197,7 +198,8 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                     'Content-Type': 'application/json',
                     'karakal-username': username,
                     'karakal-app-id': appId,
-                    'karakal-nonce': nonce
+                    'karakal-nonce': nonce,
+                    'karakal-flow-id': flowId
                 },
                 body: JSON.stringify(serializedCredential)
             });
@@ -228,6 +230,7 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
         });
 
         if (loginInitResponse.ok) {
+            const flowId = loginInitResponse.headers.get('karakal-flow-id') || "";
             const options = await loginInitResponse.json();
 
             options.allowCredentials.forEach(cred => {
@@ -255,7 +258,8 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
                     'Content-Type': 'application/json',
                     'karakal-username': username,
                     'karakal-app-id': appId,
-                    'karakal-nonce': nonce
+                    'karakal-nonce': nonce,
+                    'karakal-flow-id': flowId
                 },
             });
 

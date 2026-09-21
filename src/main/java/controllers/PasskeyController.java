@@ -100,7 +100,8 @@ public class PasskeyController {
 
             if (user == null && AppUtils.isAllowedDomain(app, username))  {
                 var challenge = new DefaultChallenge();
-                CacheUtils.cacheRegisterChallenge(username, challenge.getValue());
+                var flowId = CommonUtils.randomString(32);
+                CacheUtils.cacheRegisterChallenge(flowId, app.getAppId(), username, challenge.getValue());
 
                 var authenticatorSelectionCriteria =
                         new AuthenticatorSelectionCriteria(
@@ -124,6 +125,8 @@ public class PasskeyController {
 
                 return Response.ok()
                         .header("Access-Control-Allow-Origin", app.getUrl())
+                        .header("Access-Control-Expose-Headers", Const.FLOW_ID_HEADER)
+                        .header(Const.FLOW_ID_HEADER, flowId)
                         .bodyJson(options);
             }
         }
@@ -140,7 +143,7 @@ public class PasskeyController {
                         .header("Vary", "Origin")
                         .header("Access-Control-Allow-Origin", app.getUrl())
                         .header("Access-Control-Allow-Methods", "POST, OPTIONS")
-                        .header("Access-Control-Allow-Headers", "Content-Type, karakal-username, karakal-app-id, karakal-nonce");
+                        .header("Access-Control-Allow-Headers", "Content-Type, karakal-username, karakal-app-id, karakal-nonce, " + Const.FLOW_ID_HEADER);
             }
         }
 
@@ -165,7 +168,8 @@ public class PasskeyController {
 
                 var webAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
 
-                byte[] challenge = CacheUtils.getRegisterChallenge(username);
+                byte[] challenge = CacheUtils.getAndRemoveRegisterChallenge(
+                        request.getHeader(Const.FLOW_ID_HEADER), app.getAppId(), username);
                 if (challenge == null) {
                     return Response.badRequest();
                 }
@@ -210,7 +214,6 @@ public class PasskeyController {
                     user.setCoseKey(JsonUtils.toJson(attestedCredentialData.getCOSEKey()));
 
                     dataService.save(user);
-                    CacheUtils.removeRegisterChallenge(username);
 
                     // The first administrator is registered without any authentication, so the
                     // registration is closed immediately instead of waiting for the first login
@@ -248,7 +251,8 @@ public class PasskeyController {
             allowCredential.put("id", CommonUtils.urlEncodeWithoutPaddingToBase64(user.getCredentialId()));
 
             byte [] challenge =  new DefaultChallenge().getValue();
-            CacheUtils.cacheLoginChallenge(username, challenge);
+            var flowId = CommonUtils.randomString(32);
+            CacheUtils.cacheLoginChallenge(flowId, app.getAppId(), username, challenge);
 
             Map<String, Object> response = new HashMap<>();
             response.put("challenge", CommonUtils.urlEncodeWithoutPaddingToBase64(challenge));
@@ -259,6 +263,8 @@ public class PasskeyController {
 
             return Response.ok()
                     .header("Access-Control-Allow-Origin", app.getUrl())
+                    .header("Access-Control-Expose-Headers", Const.FLOW_ID_HEADER)
+                    .header(Const.FLOW_ID_HEADER, flowId)
                     .bodyJson(response);
         }
 
@@ -277,7 +283,8 @@ public class PasskeyController {
             var manager = WebAuthnManager.createNonStrictWebAuthnManager();
             AuthenticationData authData = manager.parseAuthenticationResponseJSON(body);
 
-            byte[] challenge = CacheUtils.getLoginChallenge(user.getUsername());
+            byte[] challenge = CacheUtils.getAndRemoveLoginChallenge(
+                    request.getHeader(Const.FLOW_ID_HEADER), app.getAppId(), user.getUsername());
             if (challenge == null) {
                 return Response.badRequest();
             }
@@ -324,7 +331,6 @@ public class PasskeyController {
 
             try {
                 manager.verify(authData, params);
-                CacheUtils.removeLoginChallenge(user.getUsername());
 
                 if (app.isDashboard() && app.isRegistration()) {
                     app.setRegistration(false);
