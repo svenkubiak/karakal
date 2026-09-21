@@ -40,6 +40,8 @@ import java.util.Objects;
 
 public class PasskeyController {
     private static final Logger LOG = LogManager.getLogger(PasskeyController.class);
+    private static final List<PublicKeyCredentialParameters> PUB_KEY_CRED_PARAMS =
+            List.of(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256));
     private final DataService dataService;
     private final Config config;
 
@@ -106,7 +108,7 @@ public class PasskeyController {
                         new PublicKeyCredentialRpEntity(AppUtils.getDomain(app.getUrl()), AppUtils.getDomain(app.getUrl())),
                         new PublicKeyCredentialUserEntity(CommonUtils.uuidV6().getBytes(StandardCharsets.UTF_8), username, ""),
                         challenge,
-                        List.of(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256)),
+                        PUB_KEY_CRED_PARAMS,
                         60000L,
                         List.of(),
                         authenticatorSelectionCriteria,
@@ -171,8 +173,8 @@ public class PasskeyController {
 
                 var registrationParameters = new RegistrationParameters(
                         serverProperty,
-                        null,
-                        false,
+                        PUB_KEY_CRED_PARAMS,
+                        true,
                         true
                 );
 
