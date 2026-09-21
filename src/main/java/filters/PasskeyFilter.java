@@ -29,16 +29,22 @@ public class PasskeyFilter implements PerRequestFilter {
     private static final String PUBLIC_KEY = "karakal-dashboard-public-key";
     private final Cache cache;
     private final String url;
-    private final String jwksUrl;
+    private final DataService dataService;
 
     @Inject
     public PasskeyFilter(Cache cache, @Named("karakal.url") String url, DataService dataService) {
         this.cache = Objects.requireNonNull(cache, "cache can not be null");
         this.url = Objects.requireNonNull(url, "url can not be null");
-        Objects.requireNonNull(dataService, "dataService can not be null");
+        this.dataService = Objects.requireNonNull(dataService, "dataService can not be null");
+    }
 
+    private String getJwksUrl() {
         App dashboard = dataService.findDashboard();
-        this.jwksUrl = url + "/api/v1/app/" + dashboard.getAppId() + "/jwks.json";
+        if (dashboard == null) {
+            throw new IllegalStateException("No dashboard application found");
+        }
+
+        return url + "/api/v1/app/" + dashboard.getAppId() + "/jwks.json";
     }
 
     @Override
@@ -91,7 +97,7 @@ public class PasskeyFilter implements PerRequestFilter {
     private RSAKey getPublicKey() {
         return cache.get(PUBLIC_KEY, v -> {
             try {
-                JWKSet jwkSet = JWKSet.load(URI.create(jwksUrl).toURL());
+                JWKSet jwkSet = JWKSet.load(URI.create(getJwksUrl()).toURL());
                 JWK jwk = jwkSet.getKeys().getFirst();
 
                 if (jwk instanceof RSAKey rsaJwk) {

@@ -36,17 +36,25 @@ public class DataService {
     public void init() {
         App dashboard = findDashboard();
         if (dashboard == null) {
-            String karakalUrl = config.getString("karakal.url");
-            dashboard = new App(Const.DASHBOARD);
-            dashboard.setAudience(AppUtils.getDomain(karakalUrl));
-            dashboard.setRedirect(karakalUrl + "/dashboard");
-            dashboard.setUrl(karakalUrl);
+            // Migration of existing installations: the dashboard app used to be identified
+            // by its name only. Flag the legacy app instead of creating a second one.
+            dashboard = datastore.find(App.class, eq("name", Const.DASHBOARD));
+
+            if (dashboard == null) {
+                String karakalUrl = config.getString("karakal.url");
+                dashboard = new App(Const.DASHBOARD);
+                dashboard.setAudience(AppUtils.getDomain(karakalUrl));
+                dashboard.setRedirect(karakalUrl + "/dashboard");
+                dashboard.setUrl(karakalUrl);
+            }
+
+            dashboard.setDashboard(true);
             datastore.save(dashboard);
         }
     }
 
     public App findDashboard() {
-        return datastore.find(App.class, eq("name", Pattern.compile(Const.DASHBOARD, Pattern.CASE_INSENSITIVE)));
+        return datastore.find(App.class, eq("dashboard", true));
     }
 
     public void indexify() {
@@ -116,7 +124,7 @@ public class DataService {
         return datastore.find(App.class,
                 and(
                         eq("url", url),
-                        not(eq("name", Const.DASHBOARD))));
+                        ne("dashboard", true)));
     }
 
     public void generateNonce() {

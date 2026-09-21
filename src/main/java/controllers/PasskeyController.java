@@ -318,7 +318,7 @@ public class PasskeyController {
                 manager.verify(authData, params);
                 CacheUtils.removeLoginChallenge(user.getUsername());
 
-                if (app.getName().equalsIgnoreCase(Const.DASHBOARD) && app.isRegistration()) {
+                if (app.isDashboard() && app.isRegistration()) {
                     app.setRegistration(false);
                     dataService.save(app);
                 }

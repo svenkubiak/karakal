@@ -98,6 +98,9 @@ public class DashboardController {
 
         form.expectValue("name", "Name must be a valid value containing min. 3 and up to 64 alphanumeric characters.");
         form.expectRegex("name", Const.NAME_PATTERN, "Name must be a valid value containing min. 3 and up to 64 alphanumeric characters.");
+        if (app == null || !app.isDashboard()) {
+            form.expectFalse("name", Const.DASHBOARD.equalsIgnoreCase(form.get("name")), "This application name is reserved.");
+        }
         if (app == null || !form.get("name").equalsIgnoreCase(app.getName())) {
             form.expectFalse("name", dataService.appExists(form.get("name")), "An application with the same name already exists.");
         }

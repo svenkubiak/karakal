@@ -26,6 +26,7 @@ public class App extends Entity {
     private String audience;
     private String email;
     private long ttl;
+    private boolean dashboard;
 
     public App() {}
 
@@ -116,6 +117,14 @@ public class App extends Entity {
     }
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public boolean isDashboard() {
+        return dashboard;
+    }
+
+    public void setDashboard(boolean dashboard) {
+        this.dashboard = dashboard;
     }
 
     public String getUrl() {
