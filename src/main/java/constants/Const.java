@@ -13,6 +13,8 @@ public final class Const {
     public static final String DASHBOARD = "Dashboard";
     public static final long COOKIE_MAX_AGE = 600L;
     public static final Duration SETUP_WINDOW = Duration.ofMinutes(15);
-    public static final Pattern DOMAIN_PATTERN = Pattern.compile("^(?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.[A-Za-z]{2,}$");
+    // Optional leading @, at least one label plus a TLD, sub domains allowed, no leading/trailing hyphen
+    public static final Pattern DOMAIN_PATTERN =
+            Pattern.compile("^@?(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+[A-Za-z]{2,63}$");
     private Const() {}
 }

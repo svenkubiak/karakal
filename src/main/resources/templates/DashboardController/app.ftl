@@ -79,10 +79,10 @@
                     <label class="label">Allowed e-mail domains</label>
                     <p class="control has-icons-left">
                         <input class="input <#if (form?? && form.hasError("email"))>is-danger</#if>" type="text" name="email" value="<#if (form?? && form.email??)>${form.email}<#elseif (app.email)??>${app.email}</#if>"
-                               placeholder="Comma separated list of @mydomain, @foo.de, @bar.de">
+                               placeholder="Comma separated list of @foo.de, bar.de, sub.example.com">
                         <span class="icon is-left"><i class="fas fa-envelope"></i></span>
                     </p>
-                    <p class="help">The allowed domain endings that are enabled to register for this application. Leave blank for unrestricted.</p>
+                    <p class="help">The allowed e-mail domains that are enabled to register for this application. Sub domains of an allowed domain are included. Leave blank for unrestricted.</p>
                     <#if form?? && form.hasError("email")>
                         <p class="help is-danger">${form.getError("email")}</p>
                     </#if>

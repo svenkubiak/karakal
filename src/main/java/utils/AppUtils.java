@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public final class AppUtils {
@@ -60,16 +61,40 @@ public final class AppUtils {
         return allowedDomain;
     }
 
+    /**
+     * Checks whether the host of a given e-mail address is covered by one of the given domains.
+     *
+     * <p>The comparison is anchored at the domain boundary: a domain matches the host itself or any
+     * of its sub domains. A plain suffix comparison would accept {@code user@evil-example.com} for
+     * the allowed domain {@code example.com}. A leading {@code @} in a configured domain is
+     * optional, as both notations are documented.</p>
+     */
     public static boolean matchesDomain(String email, List<String> domains) {
         Argument.requireNonBlank(email, "email can not be null or blank");
         Objects.requireNonNull(domains, "domains can not be null");
 
+        int index = email.trim().lastIndexOf('@');
+        if (index < 0) {
+            return false;
+        }
+
+        String host = email.trim().substring(index + 1).toLowerCase(Locale.ROOT);
+        if (host.isEmpty()) {
+            return false;
+        }
+
         for (String domain : domains) {
-            String trimmedDomain = domain == null ? "" : domain.trim();
-            if (!trimmedDomain.isEmpty() && email.trim().endsWith(trimmedDomain)) {
+            String allowedDomain = domain == null ? "" : domain.trim().toLowerCase(Locale.ROOT);
+            if (allowedDomain.startsWith("@")) {
+                allowedDomain = allowedDomain.substring(1);
+            }
+
+            if (!allowedDomain.isEmpty() &&
+                (host.equals(allowedDomain) || host.endsWith("." + allowedDomain))) {
                 return true;
             }
         }
+
         return false;
     }
 }
