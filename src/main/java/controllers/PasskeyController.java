@@ -4,7 +4,10 @@ import com.webauthn4j.WebAuthnManager;
 import com.webauthn4j.converter.AttestedCredentialDataConverter;
 import com.webauthn4j.converter.util.ObjectConverter;
 import com.webauthn4j.data.*;
-import com.webauthn4j.data.attestation.authenticator.*;
+import com.webauthn4j.data.attestation.authenticator.AAGUID;
+import com.webauthn4j.data.attestation.authenticator.AttestedCredentialData;
+import com.webauthn4j.data.attestation.authenticator.AuthenticatorData;
+import com.webauthn4j.data.attestation.authenticator.EC2COSEKey;
 import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
 import com.webauthn4j.data.client.Origin;
 import com.webauthn4j.data.client.challenge.DefaultChallenge;
@@ -58,6 +61,67 @@ public class PasskeyController {
         this.config = Objects.requireNonNull(config, "config can not be null");
     }
 
+    /**
+     * Adds the CORS and caching headers of an application to a given response.
+     *
+     * <p>{@code Vary: Origin} is required because the value of {@code Access-Control-Allow-Origin}
+     * differs per application, {@code Cache-Control: no-store} because these responses carry
+     * challenges and tokens.</p>
+     */
+    private static Response cors(Response response, App app) {
+        return response
+                .header("Access-Control-Allow-Origin", app.getUrl())
+                .header("Vary", "Origin")
+                .header("Cache-Control", Const.NO_STORE);
+    }
+
+    /**
+     * Checks that a request originates from the application it claims to belong to.
+     *
+     * <p>The application is derived from the request body respectively a request header, both of
+     * which are under the control of the caller. A request without an {@code Origin} header is
+     * accepted, as it can not be a browser based cross origin request in the first place.</p>
+     */
+    private static boolean isAllowedOrigin(App app, Request request) {
+        String origin = request.getHeader("Origin");
+        if (StringUtils.isBlank(origin)) {
+            return true;
+        }
+
+        String normalized = AppUtils.normalizeOrigin(origin);
+
+        return StringUtils.isNotBlank(normalized) && normalized.equals(AppUtils.normalizeOrigin(app.getUrl()));
+    }
+
+    private static RegistrationParameters registrationParameters(ServerProperty serverProperty) {
+        return new RegistrationParameters(
+                serverProperty,
+                PUB_KEY_CRED_PARAMS,
+                true,   // userVerificationRequired
+                true    // userPresenceRequired
+        );
+    }
+
+    private static AttestedCredentialData attestedCredentialData(User user) throws GeneralSecurityException {
+        String cbor = user.getAttestedCredentialDataCbor();
+        if (StringUtils.isNotBlank(cbor)) {
+            return ATTESTED_CREDENTIAL_DATA_CONVERTER.convert(CommonUtils.decodeFromBase64(cbor));
+        }
+
+        var publicKey = (ECPublicKey) KeyFactory
+                .getInstance("EC")
+                .generatePublic(new X509EncodedKeySpec(user.getPublicKeyCose()));
+
+        return new AttestedCredentialData(
+                AAGUID.ZERO,
+                user.getCredentialId(),
+                EC2COSEKey.create(publicKey, COSEAlgorithmIdentifier.ES256));
+    }
+
+    private static String toBase64(byte[] bytes) {
+        return new String(CommonUtils.encodeToBase64(bytes), StandardCharsets.UTF_8);
+    }
+
     public Response jwks(@NotBlank @Pattern(regexp = Const.APP_ID_REGEX) String appId) {
         var app = dataService.findApp(appId);
         if (app != null) {
@@ -93,6 +157,15 @@ public class PasskeyController {
 
         return Response.notFound();
     }
+
+    /**
+     * Restores the attested credential data of a given user.
+     *
+     * <p>Credentials are stored in the canonical CBOR encoding of webauthn4j. Credentials that were
+     * registered before that encoding was introduced are restored from the stored public key, which
+     * is an X.509 encoded EC public key. The AAGUID is not used during authentication and is
+     * therefore zeroed in that case.</p>
+     */
 
     public Response registerInit(@NotNull @NotEmpty Map<String, String> data, Request request) {
         var app = dataService.findApp(data.get("appId"));
@@ -371,74 +444,5 @@ public class PasskeyController {
         }
 
         return Response.badRequest();
-    }
-
-    /**
-     * Restores the attested credential data of a given user.
-     *
-     * <p>Credentials are stored in the canonical CBOR encoding of webauthn4j. Credentials that were
-     * registered before that encoding was introduced are restored from the stored public key, which
-     * is an X.509 encoded EC public key. The AAGUID is not used during authentication and is
-     * therefore zeroed in that case.</p>
-     */
-    /**
-     * Adds the CORS and caching headers of an application to a given response.
-     *
-     * <p>{@code Vary: Origin} is required because the value of {@code Access-Control-Allow-Origin}
-     * differs per application, {@code Cache-Control: no-store} because these responses carry
-     * challenges and tokens.</p>
-     */
-    private static Response cors(Response response, App app) {
-        return response
-                .header("Access-Control-Allow-Origin", app.getUrl())
-                .header("Vary", "Origin")
-                .header("Cache-Control", Const.NO_STORE);
-    }
-
-    /**
-     * Checks that a request originates from the application it claims to belong to.
-     *
-     * <p>The application is derived from the request body respectively a request header, both of
-     * which are under the control of the caller. A request without an {@code Origin} header is
-     * accepted, as it can not be a browser based cross origin request in the first place.</p>
-     */
-    private static boolean isAllowedOrigin(App app, Request request) {
-        String origin = request.getHeader("Origin");
-        if (StringUtils.isBlank(origin)) {
-            return true;
-        }
-
-        String normalized = AppUtils.normalizeOrigin(origin);
-
-        return StringUtils.isNotBlank(normalized) && normalized.equals(AppUtils.normalizeOrigin(app.getUrl()));
-    }
-
-    static RegistrationParameters registrationParameters(ServerProperty serverProperty) {
-        return new RegistrationParameters(
-                serverProperty,
-                PUB_KEY_CRED_PARAMS,
-                true,   // userVerificationRequired
-                true    // userPresenceRequired
-        );
-    }
-
-    static AttestedCredentialData attestedCredentialData(User user) throws GeneralSecurityException {
-        String cbor = user.getAttestedCredentialDataCbor();
-        if (StringUtils.isNotBlank(cbor)) {
-            return ATTESTED_CREDENTIAL_DATA_CONVERTER.convert(CommonUtils.decodeFromBase64(cbor));
-        }
-
-        var publicKey = (ECPublicKey) KeyFactory
-                .getInstance("EC")
-                .generatePublic(new X509EncodedKeySpec(user.getPublicKeyCose()));
-
-        return new AttestedCredentialData(
-                AAGUID.ZERO,
-                user.getCredentialId(),
-                EC2COSEKey.create(publicKey, COSEAlgorithmIdentifier.ES256));
-    }
-
-    private static String toBase64(byte[] bytes) {
-        return new String(CommonUtils.encodeToBase64(bytes), StandardCharsets.UTF_8);
     }
 }

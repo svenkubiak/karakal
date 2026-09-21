@@ -7,13 +7,13 @@ import io.mangoo.core.Config;
 import io.mangoo.filters.CsrfFilter;
 import io.mangoo.routing.Response;
 import io.mangoo.routing.bindings.Form;
+import io.mangoo.routing.bindings.Request;
 import io.mangoo.routing.bindings.Session;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.server.handlers.CookieImpl;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import io.mangoo.routing.bindings.Request;
 import models.App;
 import models.User;
 import org.apache.commons.lang3.StringUtils;
@@ -61,37 +61,6 @@ public class DashboardController {
         return Response.redirect("/dashboard/login")
                 .cookie(cookie)
                 .header("Clear-Site-Data", "*");
-    }
-
-    /**
-     * Invalidates all tokens of the user the given request is authenticated with. Deleting the
-     * cookie alone would leave a copied token valid until it expires.
-     */
-    private void invalidateToken(Request request) {
-        var cookie = request.getCookie(Const.COOKIE_NAME);
-        if (cookie == null || StringUtils.isBlank(cookie.getValue())) {
-            return;
-        }
-
-        try {
-            App dashboard = dataService.findDashboard();
-            String url = config.getString("karakal.url");
-
-            var claims = JwtUtils.verify(
-                    cookie.getValue(),
-                    JwtUtils.fromBase64Public(dashboard.getPublicKey()),
-                    url,
-                    AppUtils.getDomain(url));
-
-            User user = dataService.findUser(claims.getSubject(), dashboard.getAppId());
-            if (user != null) {
-                user.setInvalidBefore(Instant.now());
-                dataService.save(user);
-            }
-        } catch (Exception e) {
-            // An invalid or expired token can not be invalidated, the cookie is dropped either way
-            LOG.info("Could not invalidate token on logout", e);
-        }
     }
 
     @FilterWith(PasskeyFilter.class)
@@ -224,5 +193,33 @@ public class DashboardController {
         }
 
         return Response.redirect("/dashboard");
+    }
+
+
+    private void invalidateToken(Request request) {
+        var cookie = request.getCookie(Const.COOKIE_NAME);
+        if (cookie == null || StringUtils.isBlank(cookie.getValue())) {
+            return;
+        }
+
+        try {
+            App dashboard = dataService.findDashboard();
+            String url = config.getString("karakal.url");
+
+            var claims = JwtUtils.verify(
+                    cookie.getValue(),
+                    JwtUtils.fromBase64Public(dashboard.getPublicKey()),
+                    url,
+                    AppUtils.getDomain(url));
+
+            User user = dataService.findUser(claims.getSubject(), dashboard.getAppId());
+            if (user != null) {
+                user.setInvalidBefore(Instant.now());
+                dataService.save(user);
+            }
+        } catch (Exception e) {
+            // An invalid or expired token can not be invalidated, the cookie is dropped either way
+            LOG.info("Could not invalidate token on logout", e);
+        }
     }
 }
