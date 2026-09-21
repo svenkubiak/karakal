@@ -39,3 +39,6 @@ main {
     text-align: center;
     margin-top: 1rem
 }
+.auth-status-icon {
+    font-size: 3rem
+}

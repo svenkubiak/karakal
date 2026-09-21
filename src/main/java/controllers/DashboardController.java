@@ -35,7 +35,9 @@ public class DashboardController {
 
     public Response login() {
         App dashboard = dataService.findDashboard();
-        return Response.ok().render("appId", dashboard.getAppId());
+        return Response.ok()
+                .header("Cache-Control", Const.NO_STORE)
+                .render("appId", dashboard.getAppId());
     }
 
     public Response logout(Session session) {
@@ -56,7 +58,9 @@ public class DashboardController {
     @FilterWith(PasskeyFilter.class)
     public Response index() {
         List<App> apps = dataService.findApps();
-        return Response.ok().render("apps", apps);
+        return Response.ok()
+                .header("Cache-Control", Const.NO_STORE)
+                .render("apps", apps);
     }
 
     @FilterWith(PasskeyFilter.class)
@@ -66,7 +70,9 @@ public class DashboardController {
             app = dataService.findApp(appId);
         }
 
-        return Response.ok().render("app", app);
+        return Response.ok()
+                .header("Cache-Control", Const.NO_STORE)
+                .render("app", app);
     }
 
     @FilterWith(PasskeyFilter.class)
@@ -74,6 +80,7 @@ public class DashboardController {
         var app = dataService.findApp(appId);
         if (app != null) {
             return Response.ok()
+                    .header("Cache-Control", Const.NO_STORE)
                     .render("app", app)
                     .render("url", config.getString("karakal.url"));
         }

@@ -9,7 +9,9 @@ import controllers.PasskeyController;
 import io.mangoo.cache.Cache;
 import io.mangoo.cache.CacheImpl;
 import io.mangoo.cache.CacheProvider;
+import io.mangoo.constants.Header;
 import io.mangoo.core.Application;
+import io.mangoo.core.Server;
 import io.mangoo.interfaces.MangooBootstrap;
 import io.mangoo.routing.Bind;
 import io.mangoo.routing.On;
@@ -23,6 +25,8 @@ import java.util.Objects;
 
 @Singleton
 public class Bootstrap implements MangooBootstrap {
+    private static final io.undertow.util.HttpString STRICT_TRANSPORT_SECURITY =
+            new io.undertow.util.HttpString("Strict-Transport-Security");
     private final DataService dataService;
 
     @Inject
@@ -71,6 +75,18 @@ public class Bootstrap implements MangooBootstrap {
     
     @Override
     public void applicationInitialized() {
+        // mangoo I/O already sets X-Content-Type-Options, X-Frame-Options and Referrer-Policy by
+        // default. The headers below are either missing or not set to a recommended value.
+        Server.header(Header.CONTENT_SECURITY_POLICY, Const.CONTENT_SECURITY_POLICY);
+        Server.header(Header.PERMISSIONS_POLICY, Const.PERMISSIONS_POLICY);
+        Server.header(STRICT_TRANSPORT_SECURITY, Const.STRICT_TRANSPORT_SECURITY);
+
+        // The legacy XSS auditor can introduce vulnerabilities of its own and is superseded by the CSP
+        Server.header(Header.X_XSS_PROTECTION, "0");
+
+        // A blank value removes the header, see ResponseHandler
+        Server.header(Header.SERVER, "");
+
         Cache karakalCache = new CacheImpl(Caffeine.newBuilder()
                 .maximumSize(10_000)
                 .expireAfterWrite(Duration.of(60, ChronoUnit.SECONDS))

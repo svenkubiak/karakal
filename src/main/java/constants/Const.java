@@ -14,6 +14,30 @@ public final class Const {
     public static final String DASHBOARD = "Dashboard";
     public static final long COOKIE_MAX_AGE = 600L;
     public static final Duration SETUP_WINDOW = Duration.ofMinutes(15);
+    public static final String CONTENT_SECURITY_POLICY = String.join("; ",
+            "default-src 'self'",
+            "script-src 'self'",
+            "style-src 'self'",
+            "img-src 'self'",
+            "font-src 'self'",
+            "connect-src 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+            "object-src 'none'",
+            "base-uri 'none'");
+    public static final String PERMISSIONS_POLICY = String.join(", ",
+            "accelerometer=()",
+            "camera=()",
+            "geolocation=()",
+            "gyroscope=()",
+            "magnetometer=()",
+            "microphone=()",
+            "payment=()",
+            "usb=()",
+            "publickey-credentials-get=(self)",
+            "publickey-credentials-create=(self)");
+    public static final String STRICT_TRANSPORT_SECURITY = "max-age=31536000; includeSubDomains";
+    public static final String NO_STORE = "no-store";
     // Optional leading @, at least one label plus a TLD, sub domains allowed, no leading/trailing hyphen
     public static final Pattern DOMAIN_PATTERN =
             Pattern.compile("^@?(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+[A-Za-z]{2,63}$");

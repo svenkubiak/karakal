@@ -19,7 +19,7 @@ function success() {
 <main>
   <div class="auth-box">
     <div class="content has-text-centered">
-      <div class="icon is-large has-text-success" style="font-size: 3rem;">✓</div>
+      <div class="icon is-large has-text-success auth-status-icon">✓</div>
       <h1 class="title is-4 has-text-success">Success!</h1>
       <p class="subtitle is-6">Your registration was completed successfully.</p>
     </div>
@@ -36,7 +36,7 @@ function error() {
 <main>
 <div class="auth-box">
     <div class="content has-text-centered">
-      <div class="icon is-large has-text-danger" style="font-size: 3rem;">✕</div>
+      <div class="icon is-large has-text-danger auth-status-icon">✕</div>
       <h1 class="title is-4 has-text-danger">Error!</h1>
       <p class="subtitle is-6">Oops... something went wrong.<br>Please try again.</p>
     </div>
