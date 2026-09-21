@@ -93,7 +93,7 @@ public class PasskeyController {
         return StringUtils.isNotBlank(normalized) && normalized.equals(AppUtils.normalizeOrigin(app.getUrl()));
     }
 
-    private static RegistrationParameters registrationParameters(ServerProperty serverProperty) {
+    static RegistrationParameters registrationParameters(ServerProperty serverProperty) {
         return new RegistrationParameters(
                 serverProperty,
                 PUB_KEY_CRED_PARAMS,
@@ -102,7 +102,7 @@ public class PasskeyController {
         );
     }
 
-    private static AttestedCredentialData attestedCredentialData(User user) throws GeneralSecurityException {
+    static AttestedCredentialData attestedCredentialData(User user) throws GeneralSecurityException {
         String cbor = user.getAttestedCredentialDataCbor();
         if (StringUtils.isNotBlank(cbor)) {
             return ATTESTED_CREDENTIAL_DATA_CONVERTER.convert(CommonUtils.decodeFromBase64(cbor));
