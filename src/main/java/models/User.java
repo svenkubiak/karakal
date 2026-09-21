@@ -12,6 +12,7 @@ public class User extends Entity {
     private String appId;
     private String username;
     private String attestedCredentialData;
+    private String attestedCredentialDataCbor;
     private String coseKey;
 
     @Indexed(unique = true)
@@ -101,6 +102,14 @@ public class User extends Entity {
 
     public void setAttestedCredentialData(String attestedCredentialData) {
         this.attestedCredentialData = attestedCredentialData;
+    }
+
+    public String getAttestedCredentialDataCbor() {
+        return attestedCredentialDataCbor;
+    }
+
+    public void setAttestedCredentialDataCbor(String attestedCredentialDataCbor) {
+        this.attestedCredentialDataCbor = attestedCredentialDataCbor;
     }
 
     public String getCoseKey() {

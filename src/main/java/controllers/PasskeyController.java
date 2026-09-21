@@ -1,6 +1,8 @@
 package controllers;
 
 import com.webauthn4j.WebAuthnManager;
+import com.webauthn4j.converter.AttestedCredentialDataConverter;
+import com.webauthn4j.converter.util.ObjectConverter;
 import com.webauthn4j.data.*;
 import com.webauthn4j.data.attestation.authenticator.*;
 import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
@@ -30,7 +32,9 @@ import utils.CacheUtils;
 import utils.JwtUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
@@ -42,6 +46,8 @@ public class PasskeyController {
     private static final Logger LOG = LogManager.getLogger(PasskeyController.class);
     private static final List<PublicKeyCredentialParameters> PUB_KEY_CRED_PARAMS =
             List.of(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256));
+    private static final AttestedCredentialDataConverter ATTESTED_CREDENTIAL_DATA_CONVERTER =
+            new AttestedCredentialDataConverter(new ObjectConverter());
     private final DataService dataService;
     private final Config config;
 
@@ -201,6 +207,10 @@ public class PasskeyController {
                     user.setUvInitialized(registrationAuthenticatorData.isFlagUV());
                     user.setBackupEligible(registrationAuthenticatorData.isFlagBE());
                     user.setBackedUp(registrationAuthenticatorData.isFlagBS());
+                    user.setAttestedCredentialDataCbor(toBase64(
+                            ATTESTED_CREDENTIAL_DATA_CONVERTER.convert(attestedCredentialData)));
+
+                    // Kept for rollback safety only, no longer read on authentication
                     user.setAttestedCredentialData(JsonUtils.toJson(attestedCredentialData));
                     user.setCoseKey(JsonUtils.toJson(attestedCredentialData.getCOSEKey()));
 
@@ -253,7 +263,6 @@ public class PasskeyController {
         return Response.badRequest();
     }
 
-    @SuppressWarnings("rawtypes")
     public Response loginComplete(Request request) throws Exception {
         User user = null;
         var app = dataService.findApp(request.getHeader("karakal-app-id"));
@@ -278,25 +287,13 @@ public class PasskeyController {
                     .challenge(new DefaultChallenge(challenge))
                     .build();
 
-            Map coseMap = JsonUtils.getMapper().readValue(user.getCoseKey(), Map.class);
-            byte[] x = CommonUtils.decodeFromBase64((String) coseMap.get("-2"));
-            byte[] y = CommonUtils.decodeFromBase64((String) coseMap.get("-3"));
-
-            var coseKey = new EC2COSEKey(
-                    null,
-                    COSEAlgorithmIdentifier.ES256,
-                    null,
-                    Curve.SECP256R1,
-                    x,
-                    y
-            );
-
-            Map<String, String> flatMap = JsonUtils.toFlatMap(user.getAttestedCredentialData());
-            var attestedCredentialData = new AttestedCredentialData(
-                    new AAGUID(CommonUtils.decodeFromBase64(flatMap.get("aaguid.bytes"))),
-                    flatMap.get("aaguid.value").getBytes(StandardCharsets.UTF_8),
-                    coseKey
-            );
+            AttestedCredentialData attestedCredentialData;
+            try {
+                attestedCredentialData = getAttestedCredentialData(user);
+            } catch (Exception e) {
+                LOG.error("Failed to restore attested credential data", e);
+                return Response.badRequest();
+            }
 
             var credential = new Credential(
                     user.getCredentialId(),
@@ -339,6 +336,14 @@ public class PasskeyController {
                 user.setSignCount(credential.getCounter());
                 user.setUvInitialized(credential.isUvInitialized());
                 user.setBackedUp(credential.isBackedUp());
+
+                // Lazy migration of credentials that were stored before the attested credential
+                // data was persisted in its canonical CBOR encoding
+                if (StringUtils.isBlank(user.getAttestedCredentialDataCbor())) {
+                    user.setAttestedCredentialDataCbor(toBase64(
+                            ATTESTED_CREDENTIAL_DATA_CONVERTER.convert(attestedCredentialData)));
+                }
+
                 dataService.save(user);
 
                 return Response.ok()
@@ -356,5 +361,33 @@ public class PasskeyController {
         }
 
         return Response.badRequest();
+    }
+
+    /**
+     * Restores the attested credential data of a given user.
+     *
+     * <p>Credentials are stored in the canonical CBOR encoding of webauthn4j. Credentials that were
+     * registered before that encoding was introduced are restored from the stored public key, which
+     * is an X.509 encoded EC public key. The AAGUID is not used during authentication and is
+     * therefore zeroed in that case.</p>
+     */
+    private AttestedCredentialData getAttestedCredentialData(User user) throws GeneralSecurityException {
+        String cbor = user.getAttestedCredentialDataCbor();
+        if (StringUtils.isNotBlank(cbor)) {
+            return ATTESTED_CREDENTIAL_DATA_CONVERTER.convert(CommonUtils.decodeFromBase64(cbor));
+        }
+
+        var publicKey = (ECPublicKey) KeyFactory
+                .getInstance("EC")
+                .generatePublic(new X509EncodedKeySpec(user.getPublicKeyCose()));
+
+        return new AttestedCredentialData(
+                AAGUID.ZERO,
+                user.getCredentialId(),
+                EC2COSEKey.create(publicKey, COSEAlgorithmIdentifier.ES256));
+    }
+
+    private static String toBase64(byte[] bytes) {
+        return new String(CommonUtils.encodeToBase64(bytes), StandardCharsets.UTF_8);
     }
 }
