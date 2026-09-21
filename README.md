@@ -63,6 +63,9 @@ https://yourdomain.com/dashboard
 ```
 
 2. **Register an administrative user by clicking on 'Register'. You will be guided through a WebAuthn setup process.**
+
+> ⏱️ The registration of the **first** administrator is unauthenticated and is therefore only possible within **15 minutes** after the application was started. If the window has closed, restart the container (`docker compose restart karakal-web`) to open a new one.
+
 3. **After successful creation of an administrative user, the registration for the default dashboard app is disabled, and you will be redirected to the sign-in page.**
 4. **Log in with your registered user. The dashboard will be shown.**
 5. **Create a new application and configure it as needed. 🏗️**

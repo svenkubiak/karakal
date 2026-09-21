@@ -12,10 +12,13 @@ import jakarta.inject.Inject;
 import models.App;
 import models.User;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import utils.AppUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -23,6 +26,8 @@ import java.util.regex.Pattern;
 import static com.mongodb.client.model.Filters.*;
 
 public class DataService {
+    private static final Logger LOG = LogManager.getLogger(DataService.class);
+    private static volatile Instant applicationStartedAt;
     private final Datastore datastore;
     private final Config config;
 
@@ -30,6 +35,22 @@ public class DataService {
     public DataService(Datastore datastore, Config config) {
         this.datastore = Objects.requireNonNull(datastore, "datastore can not be null");
         this.config = Objects.requireNonNull(config, "config can not be null");
+    }
+
+    /**
+     * Marks the point in time the application was started. The registration of the very first
+     * administrator is only possible within {@link Const#SETUP_WINDOW} after that point in time.
+     */
+    public void markApplicationStarted() {
+        applicationStartedAt = Instant.now();
+
+        App dashboard = findDashboard();
+        if (dashboard != null && dashboard.isRegistration() && !hasUsers(dashboard)) {
+            LOG.warn("No administrator registered yet. Registration of the first administrator is " +
+                     "possible until {} ({} minutes after application start). Restart the application " +
+                     "to open a new setup window.",
+                    applicationStartedAt.plus(Const.SETUP_WINDOW), Const.SETUP_WINDOW.toMinutes());
+        }
     }
 
     public void init() {
@@ -109,11 +130,16 @@ public class DataService {
         }
     }
 
+    /**
+     * Checks whether an application with the given name already exists. The name is quoted and
+     * anchored, so that it is matched literally and completely - a caller must never be able to
+     * control the query through regular expression metacharacters.
+     */
     public boolean appExists(String name) {
         Argument.requireNonBlank(name, "name can not be null");
 
         return datastore.find(App.class,
-                regex("name", Pattern.compile(name, Pattern.CASE_INSENSITIVE))) != null;
+                regex("name", Pattern.compile("^" + Pattern.quote(name) + "$", Pattern.CASE_INSENSITIVE))) != null;
     }
 
     public App findAppByUrl(String url) {
@@ -149,6 +175,35 @@ public class DataService {
         }
 
         return app.getNonce();
+    }
+
+    public boolean hasUsers(App app) {
+        Objects.requireNonNull(app, "app can not be null");
+
+        return datastore.countAll(User.class, eq("appId", app.getAppId())) > 0;
+    }
+
+    /**
+     * Checks whether a user may register for a given application.
+     *
+     * <p>The registration of the very first administrator happens without any authentication and is
+     * therefore limited to a short window after the application was started. Once an administrator
+     * exists, the dashboard behaves like any other application and registration is controlled
+     * exclusively by its registration flag.</p>
+     */
+    public boolean isRegistrationAllowed(App app) {
+        Objects.requireNonNull(app, "app can not be null");
+
+        if (!app.isRegistration()) {
+            return false;
+        }
+
+        if (app.isDashboard() && !hasUsers(app)) {
+            Instant startedAt = applicationStartedAt;
+            return startedAt != null && Instant.now().isBefore(startedAt.plus(Const.SETUP_WINDOW));
+        }
+
+        return true;
     }
 
     public boolean isValidNonce(App app, Request request) {

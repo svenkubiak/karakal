@@ -98,11 +98,16 @@ public class DashboardController {
 
         form.expectValue("name", "Name must be a valid value containing min. 3 and up to 64 alphanumeric characters.");
         form.expectRegex("name", Const.NAME_PATTERN, "Name must be a valid value containing min. 3 and up to 64 alphanumeric characters.");
-        if (app == null || !app.isDashboard()) {
-            form.expectFalse("name", Const.DASHBOARD.equalsIgnoreCase(form.get("name")), "This application name is reserved.");
-        }
-        if (app == null || !form.get("name").equalsIgnoreCase(app.getName())) {
-            form.expectFalse("name", dataService.appExists(form.get("name")), "An application with the same name already exists.");
+        // Only a syntactically valid name is passed on, as the checks below hit the database
+        if (!form.hasError("name")) {
+            String name = form.get("name");
+
+            if (app == null || !app.isDashboard()) {
+                form.expectFalse("name", Const.DASHBOARD.equalsIgnoreCase(name), "This application name is reserved.");
+            }
+            if (app == null || !name.equalsIgnoreCase(app.getName())) {
+                form.expectFalse("name", dataService.appExists(name), "An application with the same name already exists.");
+            }
         }
         form.expectValue("redirect", "Redirect must be a valid URL.");
         form.expectUrl("redirect", "Redirect must be a valid URL.");

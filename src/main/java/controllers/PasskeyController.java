@@ -94,11 +94,11 @@ public class PasskeyController {
 
     public Response registerInit(@NotNull @NotEmpty Map<String, String> data, Request request) {
         var app = dataService.findApp(data.get("appId"));
-        if (app != null && app.isRegistration() && dataService.isValidNonce(app, request)) {
+        if (app != null && dataService.isRegistrationAllowed(app) && dataService.isValidNonce(app, request)) {
             String username = data.get("username");
             var user = dataService.findUser(username, app.getAppId());
 
-            if (user == null && AppUtils.isAllowedDomain(app, username) && app.isRegistration())  {
+            if (user == null && AppUtils.isAllowedDomain(app, username))  {
                 var challenge = new DefaultChallenge();
                 CacheUtils.cacheRegisterChallenge(username, challenge.getValue());
 
@@ -158,7 +158,7 @@ public class PasskeyController {
             }
 
             if (app != null &&
-                app.isRegistration() &&
+                dataService.isRegistrationAllowed(app) &&
                 user == null &&
                 StringUtils.isNotBlank(body) &&
                 dataService.isValidNonce(app, request)) {
@@ -177,12 +177,7 @@ public class PasskeyController {
                         .challenge(new DefaultChallenge(challenge))
                         .build();
 
-                var registrationParameters = new RegistrationParameters(
-                        serverProperty,
-                        PUB_KEY_CRED_PARAMS,
-                        true,
-                        true
-                );
+                var registrationParameters = registrationParameters(serverProperty);
 
                 var registrationData = webAuthnManager.parseRegistrationResponseJSON(body);
                 webAuthnManager.verify(registrationData, registrationParameters);
@@ -216,6 +211,13 @@ public class PasskeyController {
 
                     dataService.save(user);
                     CacheUtils.removeRegisterChallenge(username);
+
+                    // The first administrator is registered without any authentication, so the
+                    // registration is closed immediately instead of waiting for the first login
+                    if (app.isDashboard() && app.isRegistration()) {
+                        app.setRegistration(false);
+                        dataService.save(app);
+                    }
 
                     return Response.ok()
                             .header("Access-Control-Allow-Origin", app.getUrl());
@@ -289,7 +291,7 @@ public class PasskeyController {
 
             AttestedCredentialData attestedCredentialData;
             try {
-                attestedCredentialData = getAttestedCredentialData(user);
+                attestedCredentialData = attestedCredentialData(user);
             } catch (Exception e) {
                 LOG.error("Failed to restore attested credential data", e);
                 return Response.badRequest();
@@ -371,7 +373,16 @@ public class PasskeyController {
      * is an X.509 encoded EC public key. The AAGUID is not used during authentication and is
      * therefore zeroed in that case.</p>
      */
-    private AttestedCredentialData getAttestedCredentialData(User user) throws GeneralSecurityException {
+    static RegistrationParameters registrationParameters(ServerProperty serverProperty) {
+        return new RegistrationParameters(
+                serverProperty,
+                PUB_KEY_CRED_PARAMS,
+                true,   // userVerificationRequired
+                true    // userPresenceRequired
+        );
+    }
+
+    static AttestedCredentialData attestedCredentialData(User user) throws GeneralSecurityException {
         String cbor = user.getAttestedCredentialDataCbor();
         if (StringUtils.isNotBlank(cbor)) {
             return ATTESTED_CREDENTIAL_DATA_CONVERTER.convert(CommonUtils.decodeFromBase64(cbor));

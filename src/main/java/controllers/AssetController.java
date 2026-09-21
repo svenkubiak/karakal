@@ -29,7 +29,7 @@ public class AssetController {
                     .render("nonce", dataService.getNonce(app))
                     .render("appId", appId)
                     .render("api", config.getString("karakal.url"))
-                    .render("registration", app.isRegistration());
+                    .render("registration", dataService.isRegistrationAllowed(app));
         }
 
         return Response.notFound()
