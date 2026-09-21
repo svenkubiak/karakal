@@ -10,7 +10,7 @@ if (!appId || appId.trim() === "") missing.push('data-application-id');
 if (!container) missing.push('karakal-auth container');
 if (missing.length) {
     console.log("Missing:", missing.join(", "));
-    if (container) renderFragment(error);
+    if (container) container.innerHTML = error();
     throw new Error("karakal-auth initialization failed: " + missing.join(", "));
 }
 
@@ -174,7 +174,7 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
 
             let credential;
             try {
-                credential = await navigator.credentials.create({publicKey: t});
+                credential = await navigator.credentials.create({publicKey: options});
             } catch(err) {
                 if (err.name !== "NotAllowedError") renderFragment(error);
                 return;
