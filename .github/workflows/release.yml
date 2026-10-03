@@ -1,0 +1,89 @@
+# Creates a GitHub release with notes generated from the Conventional Commits since the previous tag.
+# The tag and the Docker image are created and pushed by release.sh, so no artifacts are attached.
+name: Release
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        env:
+          TAG: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          # Previous tag reachable from the commit before this tag, works for stable and pre-releases
+          PREV_TAG=$(git describe --tags --abbrev=0 --match '[0-9]*' "${TAG}^" 2>/dev/null || true)
+          RANGE="${PREV_TAG:+${PREV_TAG}..}${TAG}"
+
+          SUBJECTS=$(git log "$RANGE" --no-merges --reverse --pretty=format:'%s')
+          SECURITY_REGEX='^[a-z]+\(security\)!?: '
+          OTHER_SUBJECTS=$(printf '%s\n' "$SUBJECTS" | grep -vE "$SECURITY_REGEX" || true)
+
+          # Lists all subjects matching the regex, "type(scope): text" becomes "- **scope:** text".
+          # The scopes security and deps are omitted, as they have their own section.
+          matching() {
+            printf '%s\n' "$2" | grep -E "$1" \
+              | sed -E 's/^[a-z]+(\(([^)]*)\))?!?: /- **\2:** /; s/^- \*\*(security|deps)?:\*\* /- /' || true
+          }
+
+          section() {
+            if [ -n "$2" ]; then printf '### %s\n%s\n\n' "$1" "$2"; fi
+          }
+
+          BREAKING=$(
+            matching '^[a-z]+(\([^)]*\))?!: ' "$SUBJECTS"
+            git log "$RANGE" --no-merges --reverse --pretty=format:'%b' \
+              | grep -E '^BREAKING[ -]CHANGE: ' | sed -E 's/^BREAKING[ -]CHANGE: /- /' || true
+          )
+
+          {
+            section "Breaking Changes" "$BREAKING"
+            section "Security"         "$(matching "$SECURITY_REGEX"            "$SUBJECTS")"
+            section "Features"         "$(matching '^feat(\([^)]*\))?!?: '      "$OTHER_SUBJECTS")"
+            section "Bug Fixes"        "$(matching '^fix(\([^)]*\))?!?: '       "$OTHER_SUBJECTS")"
+            section "Performance"      "$(matching '^perf(\([^)]*\))?!?: '      "$OTHER_SUBJECTS")"
+            section "Refactoring"      "$(matching '^refactor(\([^)]*\))?!?: '  "$OTHER_SUBJECTS")"
+            section "Dependencies"     "$(matching '^(build|chore)\(deps\)!?: ' "$OTHER_SUBJECTS")"
+            section "Documentation"    "$(matching '^docs(\([^)]*\))?!?: '      "$OTHER_SUBJECTS")"
+            section "Reverts"          "$(matching '^revert(\([^)]*\))?!?: '    "$OTHER_SUBJECTS")"
+          } > release-notes.md
+
+          if ! grep -q '[^[:space:]]' release-notes.md; then
+            printf 'No notable changes.\n\n' > release-notes.md
+          fi
+
+          {
+            printf '### Docker image\n```\nghcr.io/svenkubiak/karakal/karakal:%s\n```\n\n' "$TAG"
+            if [ -n "$PREV_TAG" ]; then
+              printf '**Full Changelog**: https://github.com/%s/compare/%s...%s\n' "$REPOSITORY" "$PREV_TAG" "$TAG"
+            fi
+          } >> release-notes.md
+
+          cat release-notes.md
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # Same rule as is_stable_release in release.sh
+          PRERELEASE=()
+          if [[ "$TAG" =~ [aA]lpha|[bB]eta|[rR][cC] ]]; then
+            PRERELEASE=(--prerelease)
+          fi
+
+          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file release-notes.md "${PRERELEASE[@]}"

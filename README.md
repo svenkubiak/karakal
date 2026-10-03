@@ -1,4 +1,4 @@
-[![Latest](https://img.shields.io/github/v/tag/svenkubiak/karakal?label=ghcr.io&sort=semver)](https://ghcr.io/svenkubiak/filedpapers/filedpapers)
+[![Latest](https://img.shields.io/github/v/tag/svenkubiak/karakal?label=ghcr.io&sort=semver)](https://ghcr.io/svenkubiak/karakal/karakal)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-%F0%9F%8D%BA-yellow)](https://buymeacoffee.com/svenkubiak)
 
 Karakal
@@ -75,3 +75,55 @@ https://yourdomain.com/dashboard
 3. **After successful creation of an administrative user, the registration for the default dashboard app is disabled, and you will be redirected to the sign-in page.**
 4. **Log in with your registered user. The dashboard will be shown.**
 5. **Create a new application and configure it as needed. 🏗️**
+
+### Contributing 🤝
+
+Karakal uses [Conventional Commits](https://www.conventionalcommits.org). The release notes of every [GitHub release](https://github.com/svenkubiak/karakal/releases) are generated from the commit history, so the commit message decides if and where a change shows up.
+
+```
+<type>(<optional scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+| Type | Use for | Release notes section |
+|---|---|---|
+| `feat` | A new feature | Features |
+| `fix` | A bug fix | Bug Fixes |
+| `perf` | A performance improvement | Performance |
+| `refactor` | A code change that neither fixes a bug nor adds a feature | Refactoring |
+| `docs` | Documentation only | Documentation |
+| `revert` | Reverting a previous commit | Reverts |
+| `chore(deps)`, `build(deps)` | Dependency updates | Dependencies |
+| `build`, `chore`, `ci`, `style`, `test` | Everything else | *not listed* |
+
+- Use the scope `security` for security relevant changes, e.g. `fix(security): prevent open redirect after login`. They are listed in a separate **Security** section.
+- Mark breaking changes with `!` after the type or scope, e.g. `feat(api)!: remove legacy token endpoint`, or with a `BREAKING CHANGE:` footer.
+- Write the description in the imperative mood and lower case, without a trailing period.
+
+Examples:
+
+```
+feat(dashboard): allow disabling registration per app
+fix(webauthn): enforce user verification on registration
+chore(deps): bump mangooio to 10.15.0
+test: add unit tests for email domain parsing
+```
+
+To check commit messages locally before they are committed, enable the provided Git hook once per clone:
+
+```shell
+git config core.hooksPath .githooks
+```
+
+#### Releasing 📦
+
+Releases are created with `./release.sh`. It requires Maven, Docker and a login to `ghcr.io`. The script suggests the next version based on the commits since the last release:
+
+- a breaking change increases the major version
+- `feat` increases the minor version
+- everything else increases the patch version
+
+The script builds and pushes the Docker image and pushes the Git tag. The tag triggers a GitHub Action that creates the GitHub release with the generated release notes. `./release.sh dev` builds and pushes the `dev` image only.

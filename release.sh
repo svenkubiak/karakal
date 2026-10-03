@@ -10,7 +10,7 @@ RED="\033[31m"
 CYAN="\033[36m"
 BLUE="\033[34m"
 
-TOTAL_STEPS=5
+TOTAL_STEPS=7
 CURRENT_STEP=0
 
 divider() {
@@ -109,6 +109,29 @@ bump_patch() {
   echo "${major}.${minor}.${patch}"
 }
 
+# Breaking change bumps major, feat bumps minor, everything else bumps patch.
+# A pre-release (e.g. 1.3.0-rc1) is followed by its stable version (1.3.0).
+bump_by_commits() {
+  local ver="$1"
+  local range="$2"
+  local major minor patch
+
+  if [[ "$ver" == *-* ]]; then
+    echo "${ver%%-*}"
+    return
+  fi
+
+  IFS=. read -r major minor patch <<<"${ver%%+*}"
+  if git log --no-merges --format='%s' "$range" | grep -qE '^[a-z]+(\([^)]*\))?!: ' \
+    || git log --no-merges --format='%b' "$range" | grep -qE '^BREAKING[ -]CHANGE: '; then
+    echo "$((major + 1)).0.0"
+  elif git log --no-merges --format='%s' "$range" | grep -qE '^feat(\([^)]*\))?: '; then
+    echo "${major}.$((minor + 1)).0"
+  else
+    echo "${major}.${minor}.$((patch + 1))"
+  fi
+}
+
 is_stable_release() {
   if [[ "$IMAGE_VERSION" =~ [aA]lpha|[bB]eta|[rR][cC] ]]; then
     return 1
@@ -125,6 +148,9 @@ GHCR_URL="ghcr.io"
 REPO_URL="https://github.com/$GHCR_USERNAME/$REPO_NAME"
 
 SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+
+# Keep in sync with .githooks/commit-msg
+CONVENTIONAL_COMMIT_REGEX='^(feat|fix|perf|refactor|docs|test|build|ci|chore|style|revert)(\([a-z0-9._/-]+\))?!?: .+'
 
 banner
 
@@ -176,12 +202,57 @@ fi
 
 # === REGULAR RELEASE MODE ===
 
+step "Checking commit messages"
+
+LAST_TAG=$(git describe --tags --abbrev=0 --match '[0-9]*' 2>/dev/null || true)
+if [[ -n "$LAST_TAG" ]]; then
+  COMMIT_RANGE="${LAST_TAG}..HEAD"
+  info "Commits since ${BOLD}${LAST_TAG}${RESET}"
+else
+  COMMIT_RANGE="HEAD"
+  info "No previous release tag found, checking all commits"
+fi
+echo
+
+COMMIT_COUNT=0
+NON_CONVENTIONAL=()
+while IFS= read -r line; do
+  COMMIT_COUNT=$((COMMIT_COUNT + 1))
+  if [[ ! "${line#* }" =~ $CONVENTIONAL_COMMIT_REGEX ]]; then
+    NON_CONVENTIONAL+=("$line")
+  fi
+done < <(git log --no-merges --format='%h %s' "$COMMIT_RANGE")
+
+if [[ "$COMMIT_COUNT" -eq 0 ]]; then
+  warn "There are no commits since the last release."
+elif [[ ${#NON_CONVENTIONAL[@]} -eq 0 ]]; then
+  success "All ${COMMIT_COUNT} commits follow Conventional Commits."
+else
+  warn "${#NON_CONVENTIONAL[@]} of ${COMMIT_COUNT} commits do not follow Conventional Commits and will be missing in the changelog:"
+  echo
+  for line in "${NON_CONVENTIONAL[@]}"; do
+    echo -e "     ${DIM}${line}${RESET}"
+  done
+  echo
+  read -rp "  ❓  Continue anyway? [y/N]: " CONTINUE_RELEASE
+  if [[ ! "$CONTINUE_RELEASE" =~ ^[yY]$ ]]; then
+    error "Release aborted."
+    exit 1
+  fi
+fi
+
 step "Determining release version"
 
 CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
 DEFAULT_RELEASE_VERSION="${CURRENT_VERSION%-SNAPSHOT}"
 
 info "Current version  :  ${BOLD}${CURRENT_VERSION}${RESET}"
+
+# Suggest the next version based on the Conventional Commits since the last tag
+if [[ "$LAST_TAG" =~ $SEMVER_REGEX && "$COMMIT_COUNT" -gt 0 ]]; then
+  DEFAULT_RELEASE_VERSION="$(bump_by_commits "$LAST_TAG" "$COMMIT_RANGE")"
+  info "Suggested version:  ${BOLD}${DEFAULT_RELEASE_VERSION}${RESET} ${DIM}(based on commits since ${LAST_TAG})${RESET}"
+fi
 echo
 read -rp "  ✏️   Enter new release version [${DEFAULT_RELEASE_VERSION}]: " NEW_VERSION
 NEW_VERSION="${NEW_VERSION:-$DEFAULT_RELEASE_VERSION}"
@@ -253,7 +324,7 @@ step "Tagging Git and updating versions"
 run_silent "Creating Git tag ${IMAGE_VERSION}" git tag "$IMAGE_VERSION"
 run_maven "Setting next snapshot version ${NEXT_SNAPSHOT_VERSION}" versions:set -DnewVersion="${NEXT_SNAPSHOT_VERSION}"
 rm -f pom.xml.versionsBackup
-run_silent "Committing release ${IMAGE_VERSION}" git commit -am "Release ${IMAGE_VERSION}, next dev version ${NEXT_SNAPSHOT_VERSION}"
+run_silent "Committing release ${IMAGE_VERSION}" git commit -am "chore(release): ${IMAGE_VERSION}" -m "Next development version ${NEXT_SNAPSHOT_VERSION}"
 run_silent "Pushing to origin main" git push --tags origin main
 echo
 success "Git tag ${BOLD}${IMAGE_VERSION}${RESET} pushed and next dev version set  :  ${BOLD}${NEXT_SNAPSHOT_VERSION}${RESET}"
