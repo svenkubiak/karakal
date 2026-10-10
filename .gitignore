@@ -1,0 +1,10 @@
+/.settings
+/target
+/.idea
+/metascraper/node_modules
+/metascraper/package-lock.json
+.classpath
+.project
+*.iml
+.idea/
+settings.local.json
