@@ -180,7 +180,7 @@ if [[ "$MODE" == "dev" ]]; then
   echo
 
   run_silent "Building image ${BOLD}${IMAGE_DEV_PATH}${RESET}" \
-    docker build --no-cache \
+    docker build --pull --no-cache \
       --label "org.opencontainers.image.source=$REPO_URL" \
       -t "$IMAGE_NAME:dev" .
 
@@ -292,7 +292,7 @@ fi
 echo
 
 run_silent "Building image ${BOLD}${IMAGE_FULL_PATH}${RESET}" \
-  docker build --no-cache \
+  docker build --pull --no-cache \
     --label "org.opencontainers.image.source=$REPO_URL" \
     -t "$IMAGE_NAME:$IMAGE_VERSION" .
 success "Docker image built successfully."
