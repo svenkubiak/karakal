@@ -1,4 +1,4 @@
-<#macro myLayout title="Layout example" section="applications">
+<#macro myLayout title="Layout example">
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
   <head>
@@ -12,40 +12,20 @@
     <link rel="stylesheet" href="/assets/css/dashboard.min.css">
   </head>
   <body class="dashboard-body">
-    <div class="dashboard-layout">
-      <aside class="dashboard-sidebar" id="dashboardSidebar">
-        <div class="dashboard-sidebar-brand">
-          <a href="/dashboard" class="dashboard-sidebar-logo">
-            <span class="dashboard-sidebar-logo-text">KARAKAL</span>
-          </a>
-        </div>
-        <nav class="dashboard-sidebar-nav">
-          <p class="dashboard-sidebar-menu-label">Menu</p>
-          <a href="/dashboard" class="dashboard-sidebar-item <#if section == "applications">is-active</#if>"<#if section == "applications"> aria-current="page"</#if>>
-            <i class="fas fa-th-large" aria-hidden="true"></i>
-            <span>Applications</span>
-          </a>
-        </nav>
-        <div class="dashboard-sidebar-footer">
-          <a href="/dashboard/logout" role="button" class="danger">
+    <header class="dashboard-top">
+      <div class="dashboard-top-inner">
+        <a href="/dashboard" class="dashboard-logo">KARAKAL</a>
+        <nav class="dashboard-nav" aria-label="Dashboard">
+          <a href="/dashboard/logout" role="button" class="danger dashboard-logout">
             <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
             <span>Log out</span>
           </a>
-        </div>
-      </aside>
-      <div class="dashboard-main">
-        <header class="dashboard-header">
-          <button type="button" class="dashboard-sidebar-toggle" aria-label="menu" aria-expanded="false" data-target="dashboardSidebar">
-            <span aria-hidden="true"></span>
-            <span aria-hidden="true"></span>
-            <span aria-hidden="true"></span>
-          </button>
-        </header>
-        <main class="dashboard-content">
-          <#nested>
-        </main>
+        </nav>
       </div>
-    </div>
+    </header>
+    <main class="dashboard-content">
+      <#nested>
+    </main>
   </body>
   <script src="/assets/js/dashboard.min.js"></script>
 </html>
