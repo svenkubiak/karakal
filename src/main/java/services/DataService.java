@@ -1,5 +1,6 @@
 package services;
 
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.*;
 import constants.Const;
 import io.mangoo.core.Config;
@@ -77,6 +78,41 @@ public class DataService {
             dashboard.setDashboard(true);
             datastore.save(dashboard);
         }
+
+        adoptLegacyDashboardUsers(dashboard);
+    }
+
+    /**
+     * Moves users that still belong to a dashboard identified only by its name onto the flagged
+     * dashboard application. That happens when a later start created a second dashboard while the
+     * existing accounts stayed on the legacy application, so login looks them up under a different
+     * app id and rejects them.
+     */
+    private void adoptLegacyDashboardUsers(App dashboard) {
+        if (dashboard == null || hasUsers(dashboard)) {
+            return;
+        }
+
+        List<App> apps = datastore.findAll(App.class, Sorts.ascending("name"));
+        if (apps == null || apps.isEmpty()) {
+            return;
+        }
+
+        for (App candidate : apps) {
+            if (candidate == null
+                    || dashboard.getAppId().equals(candidate.getAppId())
+                    || candidate.isDashboard()
+                    || !Const.DASHBOARD.equals(candidate.getName())
+                    || !hasUsers(candidate)) {
+                continue;
+            }
+
+            MongoCollection<?> users = datastore.query("users");
+            users.updateMany(eq("appId", candidate.getAppId()), Updates.set("appId", dashboard.getAppId()));
+            LOG.warn("Moved dashboard users from legacy application {} to {}",
+                    candidate.getAppId(), dashboard.getAppId());
+            return;
+        }
     }
 
     public App findDashboard() {
@@ -124,13 +160,23 @@ public class DataService {
     }
 
     public User findUser(String username, String appId) {
+        Argument.requireNonBlank(username, "username can not be null or blank");
+        username = username.trim();
         Argument.validate(username, Const.USERNAME_PATTERN);
         Argument.validate(appId, Const.APP_ID_PATTERN);
 
-        return datastore.find(User.class,
-                and(
-                        eq("username", username),
-                        eq("appId", appId)));
+        // The unique index on (appId, username) uses this collation, so two addresses that differ
+        // only by case cannot both exist. The lookup has to use the same comparison, otherwise an
+        // account stored as "Admin@Example.com" is invisible when the form sends "admin@example.com".
+        Collation collation = Collation.builder()
+                .locale("en")
+                .collationStrength(CollationStrength.SECONDARY)
+                .build();
+
+        return datastore.query(User.class)
+                .find(and(eq("username", username), eq("appId", appId)))
+                .collation(collation)
+                .first();
     }
 
     public void removeUsersFromApp(String appId) {

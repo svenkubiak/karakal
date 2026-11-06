@@ -318,16 +318,22 @@ public class PasskeyController {
             return Response.notFound();
         }
 
+        if (username != null) {
+            username = username.trim();
+        }
+
         var user = dataService.findUser(username, app.getAppId());
-        if (user != null && isAllowedOrigin(app, request) &&
-            AppUtils.isAllowedDomain(app, username) && dataService.isValidNonce(app, request)) {
+        boolean originAllowed = isAllowedOrigin(app, request);
+        boolean domainAllowed = AppUtils.isAllowedDomain(app, username);
+        boolean nonceValid = dataService.isValidNonce(app, request);
+        if (user != null && originAllowed && domainAllowed && nonceValid) {
             Map<String, Object> allowCredential = new HashMap<>();
             allowCredential.put("type", "public-key");
             allowCredential.put("id", CommonUtils.urlEncodeWithoutPaddingToBase64(user.getCredentialId()));
 
             byte [] challenge =  new DefaultChallenge().getValue();
             var flowId = CommonUtils.randomString(32);
-            CacheUtils.cacheLoginChallenge(flowId, app.getAppId(), username, challenge);
+            CacheUtils.cacheLoginChallenge(flowId, app.getAppId(), user.getUsername(), challenge);
 
             Map<String, Object> response = new HashMap<>();
             response.put("challenge", CommonUtils.urlEncodeWithoutPaddingToBase64(challenge));
@@ -342,6 +348,8 @@ public class PasskeyController {
                     .bodyJson(response);
         }
 
+        LOG.warn("Rejected login-init for app {}: userFound={}, originAllowed={}, domainAllowed={}, nonceValid={}",
+                app.getAppId(), user != null, originAllowed, domainAllowed, nonceValid);
         return Response.badRequest();
     }
 

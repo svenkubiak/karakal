@@ -1,5 +1,9 @@
 package karakal.services;
 
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Collation;
+import com.mongodb.client.model.CollationStrength;
 import io.mangoo.core.Config;
 import io.mangoo.persistence.interfaces.Datastore;
 import io.mangoo.routing.bindings.Request;
@@ -279,7 +283,60 @@ class DataServiceTests {
     void findUser_rejectsInvalidInput() {
         assertThrows(IllegalArgumentException.class, () -> dataService.findUser("not-an-email", "appId"));
         assertThrows(IllegalArgumentException.class, () -> dataService.findUser("user@example.com", "invalid id!"));
-        verify(datastore, never()).find(any(), any());
+        verify(datastore, never()).query(User.class);
+    }
+
+    @Test
+    void findUser_matchesCaseInsensitivelyWithTheUniqueIndexCollation() {
+        @SuppressWarnings("unchecked")
+        MongoCollection<User> collection = mock(MongoCollection.class);
+        @SuppressWarnings("unchecked")
+        FindIterable<User> iterable = mock(FindIterable.class);
+        User stored = new User("Admin@Example.com");
+        stored.setAppId("app-id");
+
+        when(datastore.query(User.class)).thenReturn(collection);
+        when(collection.find(any(Bson.class))).thenReturn(iterable);
+        when(iterable.collation(any(Collation.class))).thenReturn(iterable);
+        when(iterable.first()).thenReturn(stored);
+
+        assertSame(stored, dataService.findUser("  admin@example.com  ", "app-id"));
+
+        ArgumentCaptor<Collation> collation = ArgumentCaptor.forClass(Collation.class);
+        verify(iterable).collation(collation.capture());
+        assertEquals("en", collation.getValue().getLocale());
+        assertEquals(CollationStrength.SECONDARY, collation.getValue().getStrength());
+
+        ArgumentCaptor<Bson> filter = ArgumentCaptor.forClass(Bson.class);
+        verify(collection).find(filter.capture());
+        String query = json(filter.getValue());
+        assertTrue(query.contains("admin@example.com"), query);
+        assertTrue(query.contains("app-id"), query);
+    }
+
+    @Test
+    void init_movesUsersFromALegacyDashboard_whenTheFlaggedDashboardHasNone() {
+        App dashboard = app("Dashboard", true);
+        App legacy = app("Dashboard", false);
+        when(datastore.find(eq(App.class), any(Bson.class))).thenReturn(dashboard);
+        when(datastore.countAll(eq(User.class), any(Bson.class))).thenAnswer(invocation -> {
+            String query = json(invocation.getArgument(1));
+            return query.contains(legacy.getAppId()) ? 1L : 0L;
+        });
+        when(datastore.findAll(eq(App.class), any(Bson.class))).thenReturn(List.of(dashboard, legacy));
+
+        @SuppressWarnings("unchecked")
+        MongoCollection<Object> users = mock(MongoCollection.class);
+        when(datastore.query("users")).thenReturn(users);
+
+        dataService.init();
+
+        ArgumentCaptor<Bson> filter = ArgumentCaptor.forClass(Bson.class);
+        ArgumentCaptor<Bson> update = ArgumentCaptor.forClass(Bson.class);
+        verify(users).updateMany(filter.capture(), update.capture());
+        assertTrue(json(filter.getValue()).contains(legacy.getAppId()));
+        assertTrue(json(update.getValue()).contains(dashboard.getAppId()));
+        verify(datastore, never()).save(any());
     }
 
     // --- H-10 ------------------------------------------------------------------------------
