@@ -6,8 +6,8 @@
             <h1 class="dashboard-page-title">Applications</h1>
             <p class="dashboard-page-subtitle">Manage your registered applications and their settings.</p>
         </div>
-        <a class="button is-dark" href="/dashboard/app">
-            <span class="icon is-small"><i class="fas fa-plus"></i></span>
+        <a class="contrast" role="button" href="/dashboard/app">
+            <i class="fas fa-plus" aria-hidden="true"></i>
             <span>Add application</span>
         </a>
     </header>
@@ -19,23 +19,23 @@
                 </header>
                 <div class="dashboard-card-content">
                     <div class="dashboard-card-tags">
-                        <span class="tag is-light">${app.url}</span>
+                        <span class="tag">${app.url}</span>
                         <#if app.registration>
-                            <span class="tag is-info is-light">Registration enabled</span>
+                            <span class="tag tag-info">Registration enabled</span>
                         <#else>
-                            <span class="tag is-warning is-light">Registration disabled</span>
+                            <span class="tag tag-warning">Registration disabled</span>
                         </#if>
                     </div>
                 </div>
                 <footer class="dashboard-card-footer">
                     <a href="/dashboard/app/${app.appId}/info" class="dashboard-card-action" title="Info">
-                        <span class="icon is-small"><i class="fas fa-info-circle"></i></span>
+                        <i class="fas fa-info-circle" aria-hidden="true"></i>
                     </a>
                     <a href="/dashboard/app/${app.appId}" class="dashboard-card-action" title="Edit">
-                        <span class="icon is-small"><i class="fas fa-edit"></i></span>
+                        <i class="fas fa-edit" aria-hidden="true"></i>
                     </a>
                     <a data-id="${app.appId}" data-name="${app.name}" class="dashboard-card-action deleteBtn" title="Delete">
-                        <span class="icon is-small"><i class="fas fa-trash-alt"></i></span>
+                        <i class="fas fa-trash-alt" aria-hidden="true"></i>
                     </a>
                 </footer>
             </article>

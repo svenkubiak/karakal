@@ -3,7 +3,7 @@
 <div class="dashboard-page">
     <header class="dashboard-page-header">
         <div>
-            <a href="/dashboard" class="dashboard-page-back"><span class="icon is-small"><i class="fas fa-arrow-left"></i></span> Applications</a>
+            <a href="/dashboard" class="dashboard-page-back"><i class="fas fa-arrow-left" aria-hidden="true"></i> Applications</a>
             <h1 class="dashboard-page-title"><#if app??>${app.name}<#else>New application</#if></h1>
             <p class="dashboard-page-subtitle"><#if app??>Edit application settings.<#else>Create a new application.</#if></p>
         </div>
@@ -16,86 +16,86 @@
         <div class="dashboard-section-content">
             <form action="/dashboard/app" method="POST" class="dashboard-form">
                 <div class="field">
-                    <label class="label">Name *</label>
-                    <p class="control has-icons-left">
-                        <input class="input <#if (form?? && form.hasError("name"))>is-danger</#if>" type="text" name="name" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.name??)>${form.name}<#elseif (app.name)??>${app.name}</#if>"
-                               placeholder="Application name (e.g. MyApp)">
-                        <span class="icon is-left"><i class="fas fa-tag"></i></span>
-                    </p>
-                    <p class="help">The name of your application.</p>
+                    <label for="app-name">Name *</label>
+                    <div class="dashboard-control">
+                        <i class="fas fa-tag" aria-hidden="true"></i>
+                        <input id="app-name" type="text" name="name" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.name??)>${form.name}<#elseif (app.name)??>${app.name}</#if>"
+                               placeholder="Application name (e.g. MyApp)"<#if form?? && form.hasError("name")> aria-invalid="true" aria-describedby="app-name-error"</#if>>
+                    </div>
+                    <small id="app-name-help">The name of your application.</small>
                     <#if form?? && form.hasError("name")>
-                        <p class="help is-danger">${form.getError("name")}</p>
+                        <small id="app-name-error" class="is-error">${form.getError("name")}</small>
                     </#if>
                 </div>
                 <div class="field">
-                    <label class="label">Login redirect *</label>
-                    <p class="control has-icons-left">
-                        <input class="input <#if (form?? && form.hasError("redirect"))>is-danger</#if>" type="text" name="redirect" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.redirect??)>${form.redirect}<#elseif (app.redirect)??>${app.redirect}</#if>"
-                               placeholder="Login redirect URL (e.g. https://myapp.com/callback)">
-                        <span class="icon is-left"><i class="fas fa-share"></i></span>
-                    </p>
-                    <p class="help">The URL to redirect to after a successful login.</p>
+                    <label for="app-redirect">Login redirect *</label>
+                    <div class="dashboard-control">
+                        <i class="fas fa-share" aria-hidden="true"></i>
+                        <input id="app-redirect" type="text" name="redirect" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.redirect??)>${form.redirect}<#elseif (app.redirect)??>${app.redirect}</#if>"
+                               placeholder="Login redirect URL (e.g. https://myapp.com/callback)"<#if form?? && form.hasError("redirect")> aria-invalid="true" aria-describedby="app-redirect-error"</#if>>
+                    </div>
+                    <small id="app-redirect-help">The URL to redirect to after a successful login.</small>
                     <#if form?? && form.hasError("redirect")>
-                        <p class="help is-danger">${form.getError("redirect")}</p>
+                        <small id="app-redirect-error" class="is-error">${form.getError("redirect")}</small>
                     </#if>
                 </div>
                 <div class="field">
-                    <label class="label">URL *</label>
-                    <p class="control has-icons-left">
-                        <input class="input <#if (form?? && form.hasError("domain"))>is-danger</#if>" type="text" name="url" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.url??)>${form.url}<#elseif (app.url)??>${app.url}</#if>"
-                               placeholder="URL address (e.g. https://myapp.com)">
-                        <span class="icon is-left"><i class="fas fa-server"></i></span>
-                    </p>
-                    <p class="help">The URL of your application.</p>
+                    <label for="app-url">URL *</label>
+                    <div class="dashboard-control">
+                        <i class="fas fa-server" aria-hidden="true"></i>
+                        <input id="app-url" type="text" name="url" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.url??)>${form.url}<#elseif (app.url)??>${app.url}</#if>"
+                               placeholder="URL address (e.g. https://myapp.com)"<#if form?? && form.hasError("domain")> aria-invalid="true" aria-describedby="app-url-error"</#if>>
+                    </div>
+                    <small id="app-url-help">The URL of your application.</small>
                     <#if form?? && form.hasError("url")>
-                        <p class="help is-danger">${form.getError("url")}</p>
+                        <small id="app-url-error" class="is-error">${form.getError("url")}</small>
                     </#if>
                 </div>
                 <div class="field">
-                    <label class="label">Cookie ttl *</label>
-                    <p class="control has-icons-left">
-                        <input class="input <#if (form?? && form.hasError("ttl"))>is-danger</#if>" type="text" name="ttl" value="<#if (form?? && form.ttl??)>${form.ttl}<#elseif (app.ttl)??>${app.ttl}<#else>600</#if>"
-                               placeholder="Lifetime in seconds (e.g. 600)">
-                        <span class="icon is-left"><i class="fas fa-clock"></i></span>
-                    </p>
-                    <p class="help">The lifetime of the cookie and JWT in seconds.</p>
+                    <label for="app-ttl">Cookie ttl *</label>
+                    <div class="dashboard-control">
+                        <i class="fas fa-clock" aria-hidden="true"></i>
+                        <input id="app-ttl" type="text" name="ttl" value="<#if (form?? && form.ttl??)>${form.ttl}<#elseif (app.ttl)??>${app.ttl}<#else>600</#if>"
+                               placeholder="Lifetime in seconds (e.g. 600)"<#if form?? && form.hasError("ttl")> aria-invalid="true" aria-describedby="app-ttl-error"</#if>>
+                    </div>
+                    <small id="app-ttl-help">The lifetime of the cookie and JWT in seconds.</small>
                     <#if form?? && form.hasError("ttl")>
-                        <p class="help is-danger">${form.getError("ttl")}</p>
+                        <small id="app-ttl-error" class="is-error">${form.getError("ttl")}</small>
                     </#if>
                 </div>
                 <div class="field">
-                    <label class="label">Audience</label>
-                    <p class="control has-icons-left">
-                        <input class="input <#if (form?? && form.hasError("audience"))>is-danger</#if>" type="text" name="audience" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.audience??)>${form.audience}<#elseif (app.audience)??>${app.audience}</#if>"
-                               placeholder="The host of your application (e.g. localhost or api.myapp.com)">
-                        <span class="icon is-left"><i class="fas fa-list"></i></span>
-                    </p>
-                    <p class="help">The audience that will be set into the JWT.</p>
+                    <label for="app-audience">Audience</label>
+                    <div class="dashboard-control">
+                        <i class="fas fa-list" aria-hidden="true"></i>
+                        <input id="app-audience" type="text" name="audience" <#if (app.dashboard)?? && app.dashboard>readonly</#if> value="<#if (form?? && form.audience??)>${form.audience}<#elseif (app.audience)??>${app.audience}</#if>"
+                               placeholder="The host of your application (e.g. localhost or api.myapp.com)"<#if form?? && form.hasError("audience")> aria-invalid="true" aria-describedby="app-audience-error"</#if>>
+                    </div>
+                    <small id="app-audience-help">The audience that will be set into the JWT.</small>
                     <#if form?? && form.hasError("audience")>
-                        <p class="help is-danger">${form.getError("audience")}</p>
+                        <small id="app-audience-error" class="is-error">${form.getError("audience")}</small>
                     </#if>
                 </div>
                 <div class="field">
-                    <label class="label">Allowed e-mail domains</label>
-                    <p class="control has-icons-left">
-                        <input class="input <#if (form?? && form.hasError("email"))>is-danger</#if>" type="text" name="email" value="<#if (form?? && form.email??)>${form.email}<#elseif (app.email)??>${app.email}</#if>"
-                               placeholder="Comma separated list of @foo.de, bar.de, sub.example.com">
-                        <span class="icon is-left"><i class="fas fa-envelope"></i></span>
-                    </p>
-                    <p class="help">The allowed e-mail domains that are enabled to register for this application. Sub domains of an allowed domain are included. Leave blank for unrestricted.</p>
+                    <label for="app-email">Allowed e-mail domains</label>
+                    <div class="dashboard-control">
+                        <i class="fas fa-envelope" aria-hidden="true"></i>
+                        <input id="app-email" type="text" name="email" value="<#if (form?? && form.email??)>${form.email}<#elseif (app.email)??>${app.email}</#if>"
+                               placeholder="Comma separated list of @foo.de, bar.de, sub.example.com"<#if form?? && form.hasError("email")> aria-invalid="true" aria-describedby="app-email-error"</#if>>
+                    </div>
+                    <small id="app-email-help">The allowed e-mail domains that are enabled to register for this application. Sub domains of an allowed domain are included. Leave blank for unrestricted.</small>
                     <#if form?? && form.hasError("email")>
-                        <p class="help is-danger">${form.getError("email")}</p>
+                        <small id="app-email-error" class="is-error">${form.getError("email")}</small>
                     </#if>
                 </div>
                 <div class="field">
-                    <label class="checkbox">
+                    <label>
                         <input type="checkbox" name="registration" value="true" <#if (app.registration)?? && app.registration>checked</#if>>
                         Allow new registrations
                     </label>
-                    <p class="help">Whether or not users are allowed to register to this App.</p>
+                    <small>Whether or not users are allowed to register to this App.</small>
                 </div>
                 <div class="field">
-                    <button class="button is-dark is-fullwidth" type="submit">Save</button>
+                    <button class="contrast" type="submit">Save</button>
                 </div>
                 <#if app??>
                 <input type="hidden" value="${app.appId}" name="appId">

@@ -18,15 +18,13 @@ function success() {
     return `
 <main>
   <div class="auth-box">
-    <div class="content has-text-centered">
-      <div class="icon is-large has-text-success auth-status-icon">✓</div>
-      <h1 class="title is-4 has-text-success">Success!</h1>
-      <p class="subtitle is-6">Your registration was completed successfully.</p>
+    <div class="auth-status">
+      <div class="auth-status-icon auth-status-success">✓</div>
+      <h1 class="auth-status-success">Success!</h1>
+      <p>Your registration was completed successfully.</p>
     </div>
-    <div class="mt-4 has-text-centered">
-      <button class="button is-primary is-fullwidth" id="to-login">Sign in now</button>
-    </div>
-</div>
+    <button type="button" id="to-login">Sign in now</button>
+  </div>
 </main>
 `;
 }
@@ -34,16 +32,14 @@ function success() {
 function error() {
     return `
 <main>
-<div class="auth-box">
-    <div class="content has-text-centered">
-      <div class="icon is-large has-text-danger auth-status-icon">✕</div>
-      <h1 class="title is-4 has-text-danger">Error!</h1>
-      <p class="subtitle is-6">Oops... something went wrong.<br>Please try again.</p>
+  <div class="auth-box">
+    <div class="auth-status">
+      <div class="auth-status-icon auth-status-error">✕</div>
+      <h1 class="auth-status-error">Error!</h1>
+      <p>Oops... something went wrong.<br>Please try again.</p>
     </div>
-    <div class="mt-4 has-text-centered">
-      <button class="button is-danger is-fullwidth" id="try-again">Try again</button>
-    </div>
-</div>
+    <button type="button" class="danger" id="try-again">Try again</button>
+  </div>
 </main>
 `;
 }
@@ -52,16 +48,13 @@ function loginForm() {
     return `
 <main>
   <div class="auth-box">
-    <h1 class="title auth-title">Sign In</h1>
+    <h1 class="auth-title">Sign In</h1>
     <p class="auth-subtitle">Please enter your email address to sign in.</p>
     <form>
-      <div class="field">
-        <label class="label">Email Address</label>
-        <div class="control">
-          <input class="input" id="username" name="username" type="email" placeholder="your@email.com" required autocomplete="username">
-        </div>
-      </div>
-      <button class="button is-link" id="login-init">Sign In</button>
+      <label for="username">Email Address
+        <input id="username" name="username" type="email" placeholder="your@email.com" required autocomplete="username">
+      </label>
+      <button type="button" id="login-init">Sign In</button>
     </form>
     <#if registration>
     <div class="alt-link">
@@ -80,16 +73,13 @@ function registerForm() {
     return `
 <main>
   <div class="auth-box" id="register">
-    <h1 class="title auth-title">Register</h1>
+    <h1 class="auth-title">Register</h1>
     <p class="auth-subtitle">Create an account to get started.</p>
     <form>
-      <div class="field">
-        <label class="label">Email Address</label>
-        <div class="control">
-          <input class="input" id="username" name="username" type="email" placeholder="your@email.com" required autocomplete="username">
-        </div>
-      </div>
-      <button class="button is-link" id="register-init">Register</button>
+      <label for="username">Email Address
+        <input id="username" name="username" type="email" placeholder="your@email.com" required autocomplete="username">
+      </label>
+      <button type="button" id="register-init">Register</button>
     </form>
     <div class="alt-link">
       Already have an account? <a href="#" id="login-form">Sign In</a>
@@ -380,7 +370,7 @@ if (api && api.trim() !== "" && appId && appId.trim() !== "" && container) {
     }
 
     Promise.all([
-        loadCss("${api}/assets/css/bulma.min.css"),
+        loadCss("${api}/assets/css/blades.min.css"),
         loadCss("${api}/assets/css/karakal.min.css")
     ]).then(() => {
         showForm('login');
