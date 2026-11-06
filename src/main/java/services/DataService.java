@@ -1,6 +1,5 @@
 package services;
 
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.*;
 import constants.Const;
 import io.mangoo.core.Config;
@@ -64,8 +63,10 @@ public class DataService {
         App dashboard = findDashboard();
         if (dashboard == null) {
             // Migration of existing installations: the dashboard app used to be identified
-            // by its name only. Flag the legacy app instead of creating a second one.
-            dashboard = datastore.find(App.class, eq("name", Const.DASHBOARD));
+            // by its name only. The match is case-insensitive, so an existing "dashboard" is
+            // reused instead of creating a second "Dashboard".
+            dashboard = datastore.find(App.class, regex("name", Pattern.compile(
+                    "^" + Pattern.quote(Const.DASHBOARD) + "$", Pattern.CASE_INSENSITIVE)));
 
             if (dashboard == null) {
                 String karakalUrl = config.getString("karakal.url");
@@ -77,41 +78,6 @@ public class DataService {
 
             dashboard.setDashboard(true);
             datastore.save(dashboard);
-        }
-
-        adoptLegacyDashboardUsers(dashboard);
-    }
-
-    /**
-     * Moves users that still belong to a dashboard identified only by its name onto the flagged
-     * dashboard application. That happens when a later start created a second dashboard while the
-     * existing accounts stayed on the legacy application, so login looks them up under a different
-     * app id and rejects them.
-     */
-    private void adoptLegacyDashboardUsers(App dashboard) {
-        if (dashboard == null || hasUsers(dashboard)) {
-            return;
-        }
-
-        List<App> apps = datastore.findAll(App.class, Sorts.ascending("name"));
-        if (apps == null || apps.isEmpty()) {
-            return;
-        }
-
-        for (App candidate : apps) {
-            if (candidate == null
-                    || dashboard.getAppId().equals(candidate.getAppId())
-                    || candidate.isDashboard()
-                    || !Const.DASHBOARD.equals(candidate.getName())
-                    || !hasUsers(candidate)) {
-                continue;
-            }
-
-            MongoCollection<?> users = datastore.query("users");
-            users.updateMany(eq("appId", candidate.getAppId()), Updates.set("appId", dashboard.getAppId()));
-            LOG.warn("Moved dashboard users from legacy application {} to {}",
-                    candidate.getAppId(), dashboard.getAppId());
-            return;
         }
     }
 
@@ -165,18 +131,22 @@ public class DataService {
         Argument.validate(username, Const.USERNAME_PATTERN);
         Argument.validate(appId, Const.APP_ID_PATTERN);
 
-        // The unique index on (appId, username) uses this collation, so two addresses that differ
-        // only by case cannot both exist. The lookup has to use the same comparison, otherwise an
-        // account stored as "Admin@Example.com" is invisible when the form sends "admin@example.com".
-        Collation collation = Collation.builder()
+        return datastore.query(User.class)
+                .find(and(eq("username", username), eq("appId", appId)))
+                .collation(userCollation())
+                .first();
+    }
+
+    /**
+     * The unique index on (appId, username) uses this collation, so two addresses that differ only
+     * by case cannot both exist. Lookups have to use the same comparison, otherwise an account
+     * stored as "Admin@Example.com" is invisible when the form sends "admin@example.com".
+     */
+    private static Collation userCollation() {
+        return Collation.builder()
                 .locale("en")
                 .collationStrength(CollationStrength.SECONDARY)
                 .build();
-
-        return datastore.query(User.class)
-                .find(and(eq("username", username), eq("appId", appId)))
-                .collation(collation)
-                .first();
     }
 
     public void removeUsersFromApp(String appId) {

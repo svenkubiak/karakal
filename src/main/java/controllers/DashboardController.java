@@ -41,6 +41,17 @@ public class DashboardController {
 
     public Response login() {
         App dashboard = dataService.findDashboard();
+        if (dashboard == null) {
+            // The flagged dashboard was removed. Reuse an existing "dashboard" application
+            // instead of failing the login page.
+            dataService.init();
+            dashboard = dataService.findDashboard();
+        }
+        if (dashboard == null) {
+            LOG.error("No dashboard application available");
+            return Response.internalServerError();
+        }
+
         return Response.ok()
                 .header("Cache-Control", Const.NO_STORE)
                 .render("appId", dashboard.getAppId());

@@ -92,15 +92,18 @@ class DataServiceTests {
     }
 
     @Test
-    void init_migratesLegacyDashboard_byExactNameMatch() {
-        App legacy = new App("Dashboard");
+    void init_reusesExistingDashboard_ignoringCase() {
+        App legacy = new App("dashboard");
         assertFalse(legacy.isDashboard());
 
         when(datastore.find(eq(App.class), any(Bson.class))).thenAnswer(invocation -> {
             String query = json(invocation.getArgument(1));
-            assertFalse(query.contains("$regularExpression"),
-                    "the legacy lookup must be an exact match, not a regex: " + query);
-            return query.contains("\"name\"") ? legacy : null;
+            if (!query.contains("\"name\"")) {
+                return null;
+            }
+            assertTrue(query.contains("\"pattern\": \"^\\\\QDashboard\\\\E$\""), query);
+            assertTrue(query.contains("\"options\": \"i\""), query);
+            return legacy;
         });
 
         dataService.init();
@@ -312,31 +315,6 @@ class DataServiceTests {
         String query = json(filter.getValue());
         assertTrue(query.contains("admin@example.com"), query);
         assertTrue(query.contains("app-id"), query);
-    }
-
-    @Test
-    void init_movesUsersFromALegacyDashboard_whenTheFlaggedDashboardHasNone() {
-        App dashboard = app("Dashboard", true);
-        App legacy = app("Dashboard", false);
-        when(datastore.find(eq(App.class), any(Bson.class))).thenReturn(dashboard);
-        when(datastore.countAll(eq(User.class), any(Bson.class))).thenAnswer(invocation -> {
-            String query = json(invocation.getArgument(1));
-            return query.contains(legacy.getAppId()) ? 1L : 0L;
-        });
-        when(datastore.findAll(eq(App.class), any(Bson.class))).thenReturn(List.of(dashboard, legacy));
-
-        @SuppressWarnings("unchecked")
-        MongoCollection<Object> users = mock(MongoCollection.class);
-        when(datastore.query("users")).thenReturn(users);
-
-        dataService.init();
-
-        ArgumentCaptor<Bson> filter = ArgumentCaptor.forClass(Bson.class);
-        ArgumentCaptor<Bson> update = ArgumentCaptor.forClass(Bson.class);
-        verify(users).updateMany(filter.capture(), update.capture());
-        assertTrue(json(filter.getValue()).contains(legacy.getAppId()));
-        assertTrue(json(update.getValue()).contains(dashboard.getAppId()));
-        verify(datastore, never()).save(any());
     }
 
     // --- H-10 ------------------------------------------------------------------------------
