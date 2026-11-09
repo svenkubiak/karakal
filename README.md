@@ -40,9 +40,9 @@ less install.sh   # review before running
 bash install.sh
 ```
 
-> 🔒 Piping a remote script straight into a shell (`curl ... | bash`) executes whatever the endpoint returns, without any chance to review it. Download, review, then run. To pin the downloaded `config.yaml` and `compose.yaml` to a released tag instead of `main`, set `KARAKAL_VERSION`, e.g. `KARAKAL_VERSION=1.1.26 bash install.sh`.
+> 🔒 Piping a remote script straight into a shell (`curl ... | bash`) executes whatever the endpoint returns, without any chance to review it. Download, review, then run. To pin the downloaded `compose.yaml` to a released tag instead of `main`, set `KARAKAL_VERSION`, e.g. `KARAKAL_VERSION=1.1.26 bash install.sh`.
 >
-> The generated `.env` and `config/config.yaml` contain all application secrets and are created with mode `600`.
+> The application uses the `config.yaml` packaged in the image. `install.sh` does not write a configuration file. It generates `.env` with mode `600` and secret files in `secrets/` (directory mode `755`, files mode `644`). Compose mounts that directory at `/run/secrets`, where mangoo reads the `file{}` values.
 
 3. **After installation is complete, open the `.env` file and set your custom configuration:**
 
@@ -50,7 +50,7 @@ bash install.sh
 KARAKAL_URL=http://localhost
 ```
 
-4. **Edit the `docker-compose.yaml` and adjust host and port as needed. Everything else is pre-configured.**
+4. **Edit `compose.yaml` and adjust the published host and port as needed. Everything else is pre-configured.**
 5. **Start up the Docker container:**
 
 ```shell

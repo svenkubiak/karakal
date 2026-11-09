@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     environment:
-      # The configuration file is set by the image itself and is intentionally not part of JAVA_OPTS
+      # The configuration file is packaged in the image and is intentionally not part of JAVA_OPTS
       JAVA_OPTS: >
         -Xms512m
         -Xmx512m
@@ -18,8 +18,8 @@ services:
     ports:
       - "127.0.0.1:9090:9090"
     volumes:
-      - ./config:/app/config
       - ./logs:/logs
+      - ./secrets:/run/secrets:ro
     depends_on:
       karakal-database:
         condition: service_healthy

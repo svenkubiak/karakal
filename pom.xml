@@ -7,7 +7,7 @@
 	<packaging>jar</packaging>
 	<url>https://github.com/svenkubiak/karakal</url>
 	<properties>
-		<mangooio.version>10.16.1</mangooio.version>
+		<mangooio.version>11.0.0</mangooio.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jdk.version>25</jdk.version>
 	</properties>
@@ -240,6 +240,14 @@
 				<exclusion>
 					<groupId>org.slf4j</groupId>
 					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tools.jackson.core</groupId>
+					<artifactId>jackson-databind</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>tools.jackson.core</groupId>
+					<artifactId>jackson-core</artifactId>
 				</exclusion>
             </exclusions>
         </dependency>

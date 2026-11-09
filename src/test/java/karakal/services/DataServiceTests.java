@@ -5,7 +5,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Collation;
 import com.mongodb.client.model.CollationStrength;
 import io.mangoo.core.Config;
-import io.mangoo.persistence.interfaces.Datastore;
+import io.mangoo.interfaces.persistence.Datastore;
 import io.mangoo.routing.bindings.Request;
 import models.App;
 import models.User;
@@ -39,14 +39,6 @@ class DataServiceTests {
     private Config config;
     private DataService dataService;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        datastore = mock(Datastore.class);
-        config = mock(Config.class);
-        dataService = new DataService(datastore, config);
-        setApplicationStartedAt(Instant.now());
-    }
-
     private static String json(Bson filter) {
         return filter.toBsonDocument(BsonDocument.class, CODEC_REGISTRY).toJson();
     }
@@ -62,6 +54,14 @@ class DataServiceTests {
         app.setDashboard(dashboard);
         app.setUrl("https://app.example");
         return app;
+    }
+
+    @BeforeEach
+    void setUp() throws Exception {
+        datastore = mock(Datastore.class);
+        config = mock(Config.class);
+        dataService = new DataService(datastore, config);
+        setApplicationStartedAt(Instant.now());
     }
 
     // --- C-01 -------------------------------------------------------------------------------

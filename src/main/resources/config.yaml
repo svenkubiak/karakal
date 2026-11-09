@@ -1,123 +1,115 @@
 # Application configuration
 #
-# The configuration consists of default values that are common in all environments and
-# environment specific values for dev, test, and prod.
+# Values in the active environment overwrite default values.
 #
-# Values in an active environment overwrite default values
+# dev and test use the literal application secret below. prod is the Docker
+# installation: every secret is file{} and is read from a file named like the
+# configuration key. The directory is /run/secrets, unless APPLICATION_SECRETS_PATH
+# is set. install.sh creates those files and does not write a second config.yaml.
 #
-# Default configuration:
+# karakal.url reads KARAKAL_URL and falls back to http://localhost.
+# persistence.mongo.username reads PERSISTENCE_MONGO_USERNAME and falls back to karakal.
 
 default:
   application:
     name: karakal
-    secret: tFS1nW3i8eAVTpFgo4CLsrXIwgf4eIPBp36HeW4LpYfoTorx79qsqiDpCMFYx83m
     language: en
-    vault:
-      enable: true
+    secret: tFS1nW3i8eAVTpFgo4CLsrXIwgf4eIPBp36HeW4LpYfoTorx79qsqiDpCMFYx83m
   connector:
     http:
-      host: 192.168.1.224
-      port: 8080
+      host: 0.0.0.0
+      port: 9090
   karakal:
     url: https://karakal.local.kubiak.me
   session:
     cookie:
       name: karakal-session
-      secret: vault{}
-      key: vault{}
-      secure: true
+      secure: false
   authentication:
-    redirect: /login
     cookie:
       name: karakal-authentication
-      secret: vault{}
-      key: vault{}
-      secure: true
-  token:
-    secret: token.secret
+      secure: false
   flash:
     cookie:
       name: karakal-flash
-      secret: vault{}
-      key: vault{}
-      secure: true
+      secure: false
+  i18n:
+    cookie:
+      name: karakal-i18n
   smtp:
     host: localhost
     port: 25
-
-# Environments configuration:
+  persistence:
+    mongo:
+      package: models
 
 environments:
+  dev:
+    connector:
+      http:
+        host: 192.168.1.224
+        port: 9090
+    persistence:
+      mongo:
+        embedded: false
+        host: localhost
+        port: 31031
+        dbname: karakal
+
   test:
     connector:
       http:
         host: 127.0.0.1
         port: 9823
-    session:
-      cookie:
-        secret: vault{}
-        key: vault{}
-        secure: false
-    flash:
-      cookie:
-        secret: vault{}
-        key: vault{}
-        secure: false
-    authentication:
-      cookie:
-        secret: vault{}
-        key: vault{}
-        secure: false
     persistence:
       mongo:
         embedded: true
         host: localhost
         port: 29019
-        package: models
-    
-  dev:
-    connector:
-      http:
-        port: 9090
-    session:
-      cookie:
-        secret: vault{}
-        key: vault{}
-        secure: false
-    flash:
-      cookie:
-        secret: vault{}
-        key: vault{}
-        secure: false
-    authentication:
-      cookie:
-        secret: vault{}
-        key: vault{}
-        secure: false
-    persistence:
-      mongo:
-        dbname: karakal
-        embedded: false
-        host: localhost
-        port: 31031
-        package: models
 
   prod:
+    application:
+      name: Karakal
+      secret: file{}
+      parameter:
+        strict: true
     connector:
       http:
+        host: 0.0.0.0
         port: 9090
+    karakal:
+      url: env{http://localhost}
     session:
       cookie:
-        secure: false
+        name: __Host-karakal-session
+        secret: file{}
+        key: file{}
+        secure: true
+    authentication:
+      redirect:
+        login: /auth/login
+        mfa: /auth/mfa
+      cookie:
+        name: __Host-karakal-authentication
+        secret: file{}
+        key: file{}
+        secure: true
     flash:
       cookie:
-        secure: false
-    authentication:
+        name: __Host-karakal-flash
+        secret: file{}
+        key: file{}
+        secure: true
+    i18n:
       cookie:
-        secure: false
+        name: __Host-karakal-i18n
     persistence:
       mongo:
-        embedded: true
-        host: localhost
-        port: 29019
-        package: models
+        embedded: false
+        host: karakal-database
+        port: 27017
+        dbname: karakal
+        username: env{karakal}
+        password: file{}
+        authdb: admin
+        auth: true

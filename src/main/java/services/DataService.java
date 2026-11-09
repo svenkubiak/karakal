@@ -3,7 +3,7 @@ package services;
 import com.mongodb.client.model.*;
 import constants.Const;
 import io.mangoo.core.Config;
-import io.mangoo.persistence.interfaces.Datastore;
+import io.mangoo.interfaces.persistence.Datastore;
 import io.mangoo.routing.bindings.Request;
 import io.mangoo.utils.Argument;
 import io.mangoo.utils.CommonUtils;
@@ -34,6 +34,18 @@ public class DataService {
     public DataService(Datastore datastore, Config config) {
         this.datastore = Objects.requireNonNull(datastore, "datastore can not be null");
         this.config = Objects.requireNonNull(config, "config can not be null");
+    }
+
+    /**
+     * The unique index on (appId, username) uses this collation, so two addresses that differ only
+     * by case cannot both exist. Lookups have to use the same comparison, otherwise an account
+     * stored as "Admin@Example.com" is invisible when the form sends "admin@example.com".
+     */
+    private static Collation userCollation() {
+        return Collation.builder()
+                .locale("en")
+                .collationStrength(CollationStrength.SECONDARY)
+                .build();
     }
 
     /**
@@ -135,18 +147,6 @@ public class DataService {
                 .find(and(eq("username", username), eq("appId", appId)))
                 .collation(userCollation())
                 .first();
-    }
-
-    /**
-     * The unique index on (appId, username) uses this collation, so two addresses that differ only
-     * by case cannot both exist. Lookups have to use the same comparison, otherwise an account
-     * stored as "Admin@Example.com" is invisible when the form sends "admin@example.com".
-     */
-    private static Collation userCollation() {
-        return Collation.builder()
-                .locale("en")
-                .collationStrength(CollationStrength.SECONDARY)
-                .build();
     }
 
     public void removeUsersFromApp(String appId) {
