@@ -48,7 +48,11 @@ bash install.sh
 
 ```shell
 KARAKAL_URL=http://localhost
+CONNECTOR_HTTP_PORT=9090
+PERSISTENCE_MONGO_HOST=karakal-database
 ```
+
+`CONNECTOR_HTTP_PORT` is the port inside the container. The published port in `compose.yaml` must forward to it. `PERSISTENCE_MONGO_HOST` is `karakal-database` when MongoDB is the service from `compose.yaml`. Set it to the hostname of your database when Karakal uses another MongoDB.
 
 4. **Edit `compose.yaml` and adjust the published host and port as needed. Everything else is pre-configured.**
 5. **Start up the Docker container:**

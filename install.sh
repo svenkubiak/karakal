@@ -157,6 +157,10 @@ fi
 if [ -f ".env" ]; then
   echo "2/5 [Skipping] .env already exists - not regenerating it."
   echo "    Remove it manually if you really want a fresh installation."
+  if ! grep -qE '^PERSISTENCE_MONGO_HOST=' .env; then
+    printf '\n# Hostname of MongoDB. karakal-database is the service in compose.yaml.\nPERSISTENCE_MONGO_HOST=karakal-database\n' >> .env
+    echo "    Added PERSISTENCE_MONGO_HOST=karakal-database to .env"
+  fi
 else
   echo "2/5 Creating .env file..."
 
@@ -170,6 +174,12 @@ else
 # Custom configuration
 VERSION=latest
 KARAKAL_URL=http://localhost
+# Port the application listens on inside the container. It must match the
+# container port in compose.yaml, for example 127.0.0.1:4747:4747 needs 4747.
+CONNECTOR_HTTP_PORT=9090
+# Hostname of MongoDB. karakal-database is the service in compose.yaml.
+# Set another host when the database is not the one started by compose.
+PERSISTENCE_MONGO_HOST=karakal-database
 
 # Auto generated - Change at your own risk
 # The database container reads the MONGODB_INITDB_* variables. The application

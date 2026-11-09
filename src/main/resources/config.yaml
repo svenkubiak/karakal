@@ -8,6 +8,8 @@
 # is set. install.sh creates those files and does not write a second config.yaml.
 #
 # karakal.url reads KARAKAL_URL and falls back to http://localhost.
+# connector.http.port reads CONNECTOR_HTTP_PORT and falls back to 9090.
+# persistence.mongo.host reads PERSISTENCE_MONGO_HOST and has no fallback.
 # persistence.mongo.username reads PERSISTENCE_MONGO_USERNAME and falls back to karakal.
 
 default:
@@ -76,7 +78,7 @@ environments:
     connector:
       http:
         host: 0.0.0.0
-        port: 9090
+        port: env{9090}
     karakal:
       url: env{http://localhost}
     session:
@@ -106,10 +108,10 @@ environments:
     persistence:
       mongo:
         embedded: false
-        host: karakal-database
+        host: env{}
         port: 27017
         dbname: karakal
         username: env{karakal}
         password: file{}
-        authdb: admin
+        authdb: env{admin}
         auth: true
