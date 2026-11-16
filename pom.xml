@@ -251,11 +251,6 @@
 				</exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>de.svenkubiak</groupId>
-            <artifactId>simple-http</artifactId>
-            <version>3.0.1</version>
-        </dependency>
 		<dependency>
 			<groupId>io.mangoo</groupId>
 			<artifactId>mangooio-test</artifactId>
