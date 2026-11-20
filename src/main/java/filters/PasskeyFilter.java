@@ -40,7 +40,7 @@ public class PasskeyFilter implements PerRequestFilter {
                     validateJwt(cookieValue);
                     return response;
                 } catch (Exception e) {
-                    LOG.error("Failed to verify JWT", e);
+                    io.mangoo.utils.JwtUtils.logRejection(LOG, "Authentication", e);
                 }
             }
         }
@@ -66,7 +66,7 @@ public class PasskeyFilter implements PerRequestFilter {
                 AppUtils.getDomain(url));
 
         // A valid signature is not sufficient, the subject must still be a user of the dashboard
-        // application. Otherwise a deleted administrator would keep full access until the token
+        // application. Otherwise, a deleted administrator would keep full access until the token
         // expires.
         User user = dataService.findUser(claims.getSubject(), dashboard.getAppId());
         if (user == null) {
